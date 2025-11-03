@@ -18,8 +18,6 @@ import { Outlet } from "react-router";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { NavMain } from "~/components/nav-main";
 import { NavUser } from "~/components/nav-user";
-import { Separator } from "~/components/ui/separator";
-import { SidebarProvider } from "~/components/ui/sidebar";
 
 const data = {
   user: {
@@ -45,7 +43,7 @@ const data = {
     },
     {
       title: "Profile",
-      url: "/studentdashboard/profile",
+      url: "/student-dashboard/my-profile",
       icon: IconUsers,
     },
   ],

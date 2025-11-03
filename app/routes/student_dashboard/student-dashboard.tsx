@@ -55,7 +55,7 @@ const StudentDashboard = () => {
                 Your latest exit pass applications
               </CardDescription>
             </div>
-            <Link to="/student/requests">
+            <Link to="/student-dashboard/my-pass-requests">
               <Button
                 variant="outline"
                 size="sm"

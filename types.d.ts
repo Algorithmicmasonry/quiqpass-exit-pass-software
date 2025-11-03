@@ -31,4 +31,19 @@ export type SessionData = {
 } | null;
 
 
-const roles = ['porter', 'CSO', 'Assistant CSO', 'Security']
+export const roles = ['porter', 'CSO', 'Assistant CSO', 'Security']
+export type PassType = "short" | "long"
+
+export interface FormData {
+  passType: PassType
+  reason: string
+  destination: string
+  departureDate: string
+  departureTime: string
+  returnDate: string
+  returnTime: string
+  emergencyContact: string
+  emergencyPhone: string
+  additionalNotes: string
+  parentNotification: boolean
+}
