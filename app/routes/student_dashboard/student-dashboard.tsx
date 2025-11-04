@@ -1,6 +1,13 @@
+import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import { Suspense } from "react";
+import toast from "react-hot-toast";
+import { Link, redirect } from "react-router";
+import { createServerSupabase } from "supabase/server";
 import { DashboardHeaders } from "~/components/dashboard";
 import DashboardSkeleton from "~/components/dashboard-skeleton";
+import NoDataPage from "~/components/global/no-data";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,14 +15,80 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { cards, mockData } from "./data";
-import { Link } from "react-router";
-import { Button } from "~/components/ui/button";
-import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
-import { Badge } from "~/components/ui/badge";
+import type { Route } from "./+types/layout";
+import { getCards } from "./data";
 
-const StudentDashboard = () => {
+export async function Loader({ request }: Route.LoaderArgs) {
+  const supabase = createServerSupabase(request);
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    supabase.auth.signOut();
+    return redirect("/login");
+  }
+
+  const userId = user.id;
+
+  const { data: student, error: studentError } = await supabase
+    .from("student")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (studentError || !student) {
+    return redirect("/login");
+  }
+
+  const { data: passes, error: passesError } = await supabase
+    .from("pass")
+    .select("*")
+    .eq("student_id", userId)
+    .order("request_at", { ascending: false })
+    .limit(5);
+
+  if (passesError) {
+    toast.error("Failed to load your passes. Please try again.");
+    return redirect("/student-dashboard");
+  }
+
+  const totalPasses = passes ? passes.length : 0;
+  const pendingCount = passes
+    ? passes.filter((pass) => pass.status === "pending").length
+    : 0;
+  const approvedCount = passes
+    ? passes.filter((pass) => pass.status === "approved").length
+    : 0;
+  const deniedCount = passes
+    ? passes.filter((pass) => pass.status === "denied").length
+    : 0;
+
+  return {
+    student,
+    recentPasses: passes ?? [],
+    stats: {
+      total: totalPasses,
+      pending: pendingCount,
+      approved: approvedCount,
+      denied: deniedCount,
+    },
+  };
+}
+
+type StudentLoaderData = Exclude<Awaited<ReturnType<typeof Loader>>, Response>;
+
+const StudentDashboard = ({
+  loaderData,
+}: {
+  loaderData?: StudentLoaderData | null;
+}) => {
+  const cards = getCards(
+    loaderData?.stats ?? { total: 0, pending: 0, approved: 0, denied: 0 }
+  );
+  const recentPasses = loaderData?.recentPasses ?? [];
+
   return (
     <Suspense fallback={<DashboardSkeleton />}>
       <main className="w-full space-y-6">
@@ -50,7 +123,9 @@ const StudentDashboard = () => {
         <Card className="text-gray-800 bg-gray-50">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="text-gray-800">
-              <CardTitle className="text-blue-950 text-lg font-semibold">Recent Requests</CardTitle>
+              <CardTitle className="text-blue-950 text-lg font-semibold">
+                Recent Requests
+              </CardTitle>
               <CardDescription className="text-gray-800">
                 Your latest exit pass applications
               </CardDescription>
@@ -68,46 +143,48 @@ const StudentDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4 text-gray-800">
-              {mockData.recentRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg "
-                >
-                  <div className="flex items-center gap-4">
-                    {getStatusIcon(request.status)}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">
-                          {request.type}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(request.status)}
-                        >
-                          {request.status.charAt(0).toUpperCase() +
-                            request.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm mt-1">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {request.destination}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(request.date).toLocaleDateString()}
-                        </span>
+              {recentPasses.length < 1 ? (
+                <NoDataPage text="No Recent Passes" />
+              ) : (
+                recentPasses.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 border border-border rounded-lg "
+                  >
+                    <div className="flex items-center gap-4">
+                      {getStatusIcon(request.status)}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{request.type}</p>
+                          <Badge
+                            variant="outline"
+                            className={getStatusColor(request.status)}
+                          >
+                            {request.status.charAt(0).toUpperCase() +
+                              request.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm mt-1">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {request.destination}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(request.date).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                    <div className="text-right">
+                      <p className="text-sm ">
+                        Submitted{" "}
+                        {new Date(request.submittedAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm ">
-                      Submitted{" "}
-                      {new Date(request.submittedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

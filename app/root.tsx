@@ -12,6 +12,7 @@ import stylesheet from "./app.css?url";
 import { Toaster } from "react-hot-toast";
 import { useNavigation } from "react-router";
 import { Loader2 } from "lucide-react";
+import { AuthProvider } from "./providers/auth-provider";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body>
         <Toaster position="bottom-right" reverseOrder={false} />
         {children}
+
         <ScrollRestoration />
         <Scripts />
       </body>

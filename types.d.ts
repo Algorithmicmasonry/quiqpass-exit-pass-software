@@ -47,3 +47,25 @@ export interface FormData {
   additionalNotes: string
   parentNotification: boolean
 }
+
+export interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number?: string;
+  gender: 'male' | 'female';
+  matric_no?: string;
+  department?: string;
+  guardian_name?: string;
+  guardian_phone_number?: string;
+  level?: number;
+  role?: roles
+  photo_url?: string;
+  hostel_id?: string;
+  is_onboarded?: boolean;
+  room_number?: string;
+  created_at: string;
+  updated_at: string;
+}
+

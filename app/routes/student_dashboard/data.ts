@@ -1,4 +1,4 @@
-import { Calendar, Clock, XCircle } from "lucide-react";
+import { Calendar, Check, Clock, XCircle } from "lucide-react";
 
 export const mockData = {
   activePasses: 1,
@@ -62,4 +62,34 @@ export const cards = [
     valueClass: "text-destructive",
   },
 ];
+export const getCards = (stats: { total: number; pending: number; approved: number; denied: number }) => [
+  {
+    title: "Total Passes",
+    value: stats.total,
+    valueClass: "text-2xl font-bold text-blue-600",
+    subtitle: "All time",
+    icon: Calendar,  // Assume you have icons
+  },
+  {
+    title: "Pending",
+    value: stats.pending,
+    valueClass: "text-2xl font-bold text-yellow-600",
+    subtitle: "Awaiting approval",
+    icon: Clock,  // Import as needed
+  },
+  {
+    title: "Approved",
+    value: stats.approved,
+    valueClass: "text-2xl font-bold text-green-600",
+    subtitle: "This month",
+    icon: Check,
+  },
+  {
+    title: "Denied",
+    value: stats.denied,
+    valueClass: "text-2xl font-bold text-red-600",
+    subtitle: "Denied requests",
+    icon: XCircle,
 
+  }
+];
