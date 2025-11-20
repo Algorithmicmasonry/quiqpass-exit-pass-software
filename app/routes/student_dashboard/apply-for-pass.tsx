@@ -43,6 +43,7 @@ const reasonOptions = [
   "Job Interview",
   "Personal Work",
   "Shopping/Banking",
+  "Sick Leave",
   "Other",
 ];
 

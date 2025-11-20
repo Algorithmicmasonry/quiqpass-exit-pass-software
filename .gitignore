@@ -5,4 +5,5 @@
 /.react-router/
 /build/
 /.env
+.env
 public/video.mp4 

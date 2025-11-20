@@ -180,7 +180,13 @@ const StudentDashboard = ({
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(request.date).toLocaleDateString()}
+                            {new Date(request.requested_at).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
                       </div>
@@ -188,7 +194,7 @@ const StudentDashboard = ({
                     <div className="text-right">
                       <p className="text-sm ">
                         Submitted{" "}
-                        {new Date(request.submittedAt).toLocaleDateString()}
+                        {new Date(request.requested_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
