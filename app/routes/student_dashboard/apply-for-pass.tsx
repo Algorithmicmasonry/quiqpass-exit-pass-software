@@ -1,5 +1,18 @@
-import type React from "react";
+import {
+  AlertCircle,
+  CalendarIcon,
+  FileText,
+  Loader2,
+  MapPin,
+  Phone,
+} from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
+import { Form, redirect, useNavigate, useNavigation } from "react-router";
+import type { FormData, PassType } from "types";
+import { DashboardHeaders } from "~/components/dashboard";
+import { Alert, AlertDescription } from "~/components/ui/alert";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,10 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -18,19 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
-import { Checkbox } from "~/components/ui/checkbox";
-import {
-  CalendarIcon,
-  MapPin,
-  Phone,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import type { FormData, PassType } from "types";
-import { useNavigate } from "react-router";
-import { DashboardHeaders } from "~/components/dashboard";
+import { Textarea } from "~/components/ui/textarea";
+import type { Route } from "./+types/layout";
+import { applyForStudentPass } from "./actions";
 
 const reasonOptions = [
   "Medical Appointment",
@@ -43,9 +46,40 @@ const reasonOptions = [
   "Other",
 ];
 
-export default function ApplyPage() {
+export async function clientAction({ request }: Route.ClientActionArgs) {
+  let res;
+  try {
+    let formData = await request.formData();
+    console.log(Object.fromEntries(formData));
+    res = await applyForStudentPass(formData, request);
+
+    if (!res.error) {
+      toast.success("Exit pass request submitted successfully!");
+      return redirect("/student-dashboard");
+    } else if (res.message == "You must be logged in to apply for a pass.") {
+      return redirect("/login");
+    } else {
+      toast.error(
+        res.message || "Failed to submit exit pass request. Please try again."
+      );
+    }
+  } catch (error) {
+    toast.error(
+      "There was an error submitting your request. Please try again."
+    );
+    console.error("Error submitting exit pass request:", error);
+  }
+
+  return res;
+}
+
+export default function ApplyPage({ actionData }: Route.ComponentProps) {
+  console.log("This is the action data: ", actionData);
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigation = useNavigation();
+  const isSubmitting =
+    navigation.formAction === "/student-dashboard/apply-for-pass";
+
   const [formData, setFormData] = useState<FormData>({
     passType: "short",
     reason: "",
@@ -64,24 +98,14 @@ export default function ApplyPage() {
     field: keyof FormData,
     value: string | boolean
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // In real app, this would be an API call
-    console.log("Form submitted:", formData);
-
-    setIsSubmitting(false);
-    navigate("/student/requests");
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      if (field === "passType" && value === "short") {
+        newData.returnDate = "";
+        newData.returnTime = "";
+      }
+      return newData;
+    });
   };
 
   const isFormValid = () => {
@@ -102,13 +126,13 @@ export default function ApplyPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl text-gray-800">
       <DashboardHeaders
         mainText="Apply for Exit Pass"
         subText="Fill out the form below to request an exit pass"
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <Form method="POST" className="space-y-6">
         {/* Pass Type Selection */}
         <Card>
           <CardHeader>
@@ -126,8 +150,10 @@ export default function ApplyPage() {
               onValueChange={(value: PassType) =>
                 handleInputChange("passType", value)
               }
-              className="grid grid-cols-1  md:grid-cols-2 gap-4"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              defaultValue="short" // Add this
             >
+              <input type="hidden" name="passType" value={formData.passType} />
               <div className="flex items-center space-x-2 border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                 <RadioGroupItem value="short" id="short" />
                 <Label htmlFor="short" className="flex-1 cursor-pointer">
@@ -164,10 +190,13 @@ export default function ApplyPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="reason" className="text-gray-800">Reason for Exit *</Label>
+                <Label htmlFor="reason" className="text-gray-800">
+                  Reason for Exit *
+                </Label>
                 <Select
                   value={formData.reason}
                   onValueChange={(value) => handleInputChange("reason", value)}
+                  name="reason"
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select reason" />
@@ -182,11 +211,14 @@ export default function ApplyPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="destination" className="text-gray-800">Destination *</Label>
+                <Label htmlFor="destination" className="text-gray-800">
+                  Destination *
+                </Label>
                 <Input
                   id="destination"
                   placeholder="e.g., Home, Hospital, City Center"
                   value={formData.destination}
+                  name="destination"
                   onChange={(e) =>
                     handleInputChange("destination", e.target.value)
                   }
@@ -195,7 +227,9 @@ export default function ApplyPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="additionalNotes" className="text-gray-800">Additional Notes</Label>
+              <Label htmlFor="additionalNotes" className="text-gray-800">
+                Additional Notes
+              </Label>
               <Textarea
                 id="additionalNotes"
                 placeholder="Any additional information or special circumstances..."
@@ -204,6 +238,7 @@ export default function ApplyPage() {
                   handleInputChange("additionalNotes", e.target.value)
                 }
                 rows={3}
+                name="additionalNotes"
               />
             </div>
           </CardContent>
@@ -223,7 +258,9 @@ export default function ApplyPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="departureDate" className="text-gray-800">Departure Date *</Label>
+                <Label htmlFor="departureDate" className="text-gray-800">
+                  Departure Date *
+                </Label>
                 <Input
                   id="departureDate"
                   type="date"
@@ -232,13 +269,17 @@ export default function ApplyPage() {
                     handleInputChange("departureDate", e.target.value)
                   }
                   className="text-gray-800"
+                  name="departureDate"
                   min={new Date().toISOString().split("T")[0]}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="departureTime" className="text-gray-800">Departure Time *</Label>
+                <Label htmlFor="departureTime" className="text-gray-800">
+                  Departure Time *
+                </Label>
                 <Input
                   id="departureTime"
+                  name="departureTime"
                   type="time"
                   className="text-gray-800"
                   value={formData.departureTime}
@@ -252,10 +293,13 @@ export default function ApplyPage() {
             {formData.passType === "long" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="returnDate" className="text-gray-800" >Return Date *</Label>
+                  <Label htmlFor="returnDate" className="text-gray-800">
+                    Return Date *
+                  </Label>
                   <Input
                     id="returnDate"
                     type="date"
+                    name="returnDate"
                     className="text-gray-800"
                     value={formData.returnDate}
                     onChange={(e) =>
@@ -268,10 +312,13 @@ export default function ApplyPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="returnTime" className="text-gray-800">Return Time *</Label>
+                  <Label htmlFor="returnTime" className="text-gray-800">
+                    Return Time *
+                  </Label>
                   <Input
                     id="returnTime"
                     type="time"
+                    name="returnTime"
                     className="text-gray-800"
                     value={formData.returnTime}
                     onChange={(e) =>
@@ -298,9 +345,12 @@ export default function ApplyPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="emergencyContact" className="text-gray-800">Contact Name *</Label>
+                <Label htmlFor="emergencyContact" className="text-gray-800">
+                  Contact Name *
+                </Label>
                 <Input
                   id="emergencyContact"
+                  name="emergencyContact"
                   placeholder="Full name"
                   className="text-gray-800"
                   value={formData.emergencyContact}
@@ -310,12 +360,15 @@ export default function ApplyPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergencyPhone" className="text-gray-800">Phone Number *</Label>
+                <Label htmlFor="emergencyPhone" className="text-gray-800">
+                  Phone Number *
+                </Label>
                 <Input
                   id="emergencyPhone"
                   type="tel"
+                  name="emergencyPhone"
                   className="text-gray-800"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="+234 7048 268704"
                   value={formData.emergencyPhone}
                   onChange={(e) =>
                     handleInputChange("emergencyPhone", e.target.value)
@@ -331,8 +384,13 @@ export default function ApplyPage() {
                 onCheckedChange={(checked) =>
                   handleInputChange("parentNotification", checked as boolean)
                 }
+                name="parentNotification"
+                disabled
               />
-              <Label htmlFor="parentNotification" className="text-sm text-gray-800">
+              <Label
+                htmlFor="parentNotification"
+                className="text-sm text-gray-800"
+              >
                 Send notification to parent/guardian when I leave campus
               </Label>
             </div>
@@ -364,10 +422,14 @@ export default function ApplyPage() {
             disabled={!isFormValid() || isSubmitting}
             className="flex-1"
           >
-            {isSubmitting ? "Submitting..." : "Submit Request"}
+            {isSubmitting ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              "Submit Request"
+            )}
           </Button>
         </div>
-      </form>
+      </Form>
     </div>
   );
 }

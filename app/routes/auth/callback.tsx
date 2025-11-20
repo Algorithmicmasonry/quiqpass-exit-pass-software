@@ -1,6 +1,7 @@
 import React from "react";
 import { supabase } from "supabase/supabase-client";
 import { useNavigate } from "react-router";
+import Loader from "~/components/loader";
 
 // TODO: Work on the ui of the auth callback page
 
@@ -17,7 +18,7 @@ export default function AuthCallback() {
       const refresh_token = params.get("refresh_token");
 
       if (!access_token || !refresh_token) {
-       window.location.replace("/login");// or your auth page
+        window.location.replace("/login"); // or your auth page
         return;
       }
       // Save Supabase session
@@ -80,5 +81,5 @@ export default function AuthCallback() {
     handleOAuth();
   }, []);
 
-  return <p className="text-center font-semibold text-4xl">Loading...</p>;
+  return <Loader />;
 }

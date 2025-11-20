@@ -13,6 +13,7 @@ import { Toaster } from "react-hot-toast";
 import { useNavigation } from "react-router";
 import { Loader2 } from "lucide-react";
 import { AuthProvider } from "./providers/auth-provider";
+import Loader from "./components/loader";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -30,7 +31,7 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -54,7 +55,7 @@ export default function App() {
 
   return (
     <div>
-      {isNavigating && <Loader2 className="animate-spin" />}
+      {isNavigating && <Loader />}
       <Outlet />
     </div>
   );

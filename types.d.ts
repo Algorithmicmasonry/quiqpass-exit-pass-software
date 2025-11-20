@@ -69,3 +69,28 @@ export interface User {
   updated_at: string;
 }
 
+export type PassRequest = {
+    additional_notes: string;
+    created_at: string;
+    departure_date: string;
+    departure_time: string;
+    destination: string;
+    emergency_contact_name: string;
+    emergency_contact_phone_number: string;
+    id: string;
+    reason:string;
+    requested_at: string;
+    return_date: string;
+    return_time: string;
+    status: string;
+    student_id: string;
+    type: string;
+    updated_at: string;
+    approved_by: string;
+    approved_at: string;
+    denied_by: string;
+    denied_at: string;
+    denial_reason: string;
+    checked_out_at: string;
+    checked_in_at: string;
+}

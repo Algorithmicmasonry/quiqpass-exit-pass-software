@@ -137,7 +137,7 @@ const StudentDashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative" suppressHydrationWarning>
       {/* Main Gradient Background */}
       <div
         className="fixed inset-0 z-0"

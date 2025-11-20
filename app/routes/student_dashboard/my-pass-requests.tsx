@@ -1,4 +1,23 @@
+import {
+  AlertCircle,
+  ArrowRight,
+  Calendar,
+  CheckCircle,
+  Clock,
+  FileText,
+  Filter,
+  MapPin,
+  Search,
+  XCircle
+} from "lucide-react";
 import { useState } from "react";
+import { redirect } from "react-router";
+import { supabase } from "supabase/supabase-client";
+import type { PassRequest } from "types";
+import { DashboardHeaders } from "~/components/dashboard";
+import Loader from "~/components/loader";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,8 +25,22 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -16,116 +49,90 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { Input } from "~/components/ui/input";
-import {
-  Clock,
-  CheckCircle,
-  XCircle,
-  MapPin,
-  Calendar,
-  Search,
-  Filter,
-} from "lucide-react";
 import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
-import { DashboardHeaders } from "~/components/dashboard";
+import type { Route } from "./+types/my-pass-requests";
 
-// <CHANGE> Added comprehensive mock data for pass requests
-const mockRequests = [
-  {
-    id: "REQ-001",
-    type: "Short Pass",
-    destination: "Medical Appointment",
-    reason: "Dental checkup at University Hospital",
-    departureDate: "2024-01-15",
-    departureTime: "14:00",
-    returnDate: "2024-01-15",
-    returnTime: "17:00",
-    status: "approved",
-    submittedAt: "2024-01-10T10:30:00",
-    approvedBy: "Dr. Johnson (CSO)",
-    approvedAt: "2024-01-11T09:15:00",
-  },
-  {
-    id: "REQ-002",
-    type: "Long Pass",
-    destination: "Home Visit",
-    reason: "Family emergency - father's surgery",
-    departureDate: "2024-01-20",
-    departureTime: "08:00",
-    returnDate: "2024-01-25",
-    returnTime: "18:00",
-    status: "pending",
-    submittedAt: "2024-01-12T14:20:00",
-    forwardedBy: "Porter Williams",
-    forwardedAt: "2024-01-12T15:00:00",
-  },
-  {
-    id: "REQ-003",
-    type: "Short Pass",
-    destination: "Shopping Mall",
-    reason: "Purchase textbooks and supplies",
-    departureDate: "2024-01-08",
-    departureTime: "10:00",
-    returnDate: "2024-01-08",
-    returnTime: "15:00",
-    status: "completed",
-    submittedAt: "2024-01-05T11:00:00",
-    approvedBy: "Dr. Johnson (CSO)",
-    approvedAt: "2024-01-06T08:30:00",
-    checkedOutAt: "2024-01-08T10:05:00",
-    checkedInAt: "2024-01-08T14:45:00",
-  },
-  {
-    id: "REQ-004",
-    type: "Short Pass",
-    destination: "City Library",
-    reason: "Research for final year project",
-    departureDate: "2024-01-03",
-    departureTime: "09:00",
-    returnDate: "2024-01-03",
-    returnTime: "16:00",
-    status: "denied",
-    submittedAt: "2024-01-02T16:45:00",
-    deniedBy: "Dr. Johnson (CSO)",
-    deniedAt: "2024-01-03T07:20:00",
-    denialReason: "Insufficient notice period",
-  },
-  {
-    id: "REQ-005",
-    type: "Long Pass",
-    destination: "Accra",
-    reason: "Attend cousin's wedding ceremony",
-    departureDate: "2024-02-01",
-    departureTime: "06:00",
-    returnDate: "2024-02-03",
-    returnTime: "20:00",
-    status: "pending",
-    submittedAt: "2024-01-14T09:00:00",
-  },
-];
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  try {
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-export default function RequestsPage() {
+    if (authError || !user) {
+      return redirect("/login");
+    }
+
+    // Fetch student's pass requests with proper column name
+    const { data: passes, error: passError } = await supabase
+      .from("pass")
+      .select("*")
+      .eq("student_id", user.id)
+      .order("requested_at", { ascending: false });
+
+    if (passError) {
+      console.error("Error fetching passes:", passError);
+      return {
+        passes: [],
+        error: "Failed to load pass requests",
+      };
+    }
+ 
+    return {
+      passes: passes || [],
+      error: null,
+    };
+  } catch (error) {
+    console.error("Unexpected error in loader:", error);
+    return {
+      passes: [],
+      error: "An unexpected error occurred",
+    };
+  }
+}
+
+export function HydrateFallback() {
+  return <Loader />;
+}
+
+export default function RequestsPage({ loaderData }: Route.ComponentProps) {
+  const { passes, error } = loaderData;
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRequest, setSelectedRequest] = useState<PassRequest | null>(
+    null
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // <CHANGE> Filter requests based on status and search query
-  const filteredRequests = mockRequests.filter((request) => {
+  // Filter requests based on status and search query
+  const filteredRequests = passes.filter((pass) => {
     const matchesStatus =
-      statusFilter === "all" || request.status === statusFilter;
+      statusFilter === "all" || pass.status === statusFilter;
     const matchesSearch =
       searchQuery === "" ||
-      request.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.reason.toLowerCase().includes(searchQuery.toLowerCase());
+      pass.destination?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pass.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pass.reason?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+
+  // Helper function to format date
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Helper function to format time
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return "N/A";
+    return timeString.slice(0, 5); // Convert "HH:MM:SS" to "HH:MM"
+  };
+
+  const handleViewDetails = (request: PassRequest) => {
+    setSelectedRequest(request);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -134,7 +141,16 @@ export default function RequestsPage() {
         subText="View and manage your exit pass requests"
       />
 
-      {/* <CHANGE> Added filters and search */}
+      {/* Display error if any */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <p className="text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters and search */}
       <Card>
         <CardHeader>
           <CardTitle>Filter Requests</CardTitle>
@@ -157,14 +173,13 @@ export default function RequestsPage() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status"  />
+                  <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="denied">Denied</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -172,8 +187,8 @@ export default function RequestsPage() {
         </CardContent>
       </Card>
 
-      {/* <CHANGE> Added comprehensive requests table */}
-      <Card>
+      {/* Requests table */}
+      <Card className="font-semibold">
         <CardHeader>
           <CardTitle>All Requests ({filteredRequests.length})</CardTitle>
           <CardDescription>
@@ -202,28 +217,32 @@ export default function RequestsPage() {
                       colSpan={8}
                       className="text-center py-8 text-gray-800"
                     >
-                      No requests found matching your filters
+                      {passes.length === 0
+                        ? "You haven't submitted any pass requests yet"
+                        : "No requests found matching your filters"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRequests.map((request) => (
-                    <TableRow key={request.id}>
+                  filteredRequests.map((pass) => (
+                    <TableRow key={pass.id}>
                       <TableCell className="font-medium">
-                        {request.id}
+                        <span className="text-xs font-mono">
+                          {pass.id.slice(0, 8)}...
+                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className="bg-primary/10 text-primary border-primary/20"
+                          className="bg-primary/10 text-primary border-primary/20 text-md"
                         >
-                          {request.type}
+                          {pass.type === "short" ? "Short Pass" : "Long Pass"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
                           <span className="max-w-[150px] truncate">
-                            {request.destination}
+                            {pass.destination || "N/A"}
                           </span>
                         </div>
                       </TableCell>
@@ -231,50 +250,49 @@ export default function RequestsPage() {
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
                           <div>
-                            <div>
-                              {new Date(
-                                request.departureDate
-                              ).toLocaleDateString()}
-                            </div>
+                            <div>{formatDate(pass.departure_date)}</div>
                             <div className="text-xs text-muted-foreground">
-                              {request.departureTime}
+                              {formatTime(pass.departure_time)}
                             </div>
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
                           <div>
-                            <div>
-                              {new Date(
-                                request.returnDate
-                              ).toLocaleDateString()}
-                            </div>
+                            <div>{formatDate(pass.return_date)}</div>
                             <div className="text-xs text-muted-foreground">
-                              {request.returnTime}
+                              {formatTime(pass.return_time)}
                             </div>
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={getStatusColor(request.status)}
+                          className={getStatusColor(pass.status)}
                         >
                           <span className="flex items-center gap-1">
-                            {getStatusIcon(request.status)}
-                            {request.status.charAt(0).toUpperCase() +
-                              request.status.slice(1)}
+                            {getStatusIcon(pass.status)}
+                            {pass.status.charAt(0).toUpperCase() +
+                              pass.status.slice(1)}
                           </span>
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(request.submittedAt).toLocaleDateString()}
+                        {formatDate(pass.requested_at)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          size="sm"
+                          className="text-md"
+                          onClick={() => handleViewDetails(pass)}
+                        >
                           View Details
+                          <ArrowRight />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -285,6 +303,239 @@ export default function RequestsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Pass Request Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about your exit pass request
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedRequest && (
+            <div className="space-y-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Request ID</p>
+                  <p className="font-mono font-medium">{selectedRequest.id.slice(0,8)}...</p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={getStatusColor(selectedRequest.status)}
+                >
+                  <span className="flex items-center gap-1">
+                    {getStatusIcon(selectedRequest.status)}
+                    {selectedRequest.status.charAt(0).toUpperCase() +
+                      selectedRequest.status.slice(1)}
+                  </span>
+                </Badge>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Pass Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pass Type</p>
+                    <Badge
+                      variant="outline"
+                      className="bg-primary/10 text-primary border-primary/20 mt-1 text-sm"
+                    >
+                      {selectedRequest.type}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Submitted On
+                    </p>
+                    <p className="font-medium mt-1">
+                      {new Date(selectedRequest.created_at).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Travel Details
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Reason for Exit
+                    </p>
+                    <p className="font-medium mt-1">{selectedRequest.reason}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Additional Notes
+                    </p>
+                    <p className="text-sm mt-1">{selectedRequest.additional_notes}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Schedule
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Departure</p>
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {new Date(
+                          selectedRequest.departure_date
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatTime(selectedRequest.departure_time)}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedRequest.type == "long" && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Return</p>
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {formatDate(selectedRequest.return_date)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatTime(selectedRequest.return_time)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {selectedRequest.status == "pending" ? (
+                <p className={getStatusColor(selectedRequest.status)}>
+                  Pass has not yet been approved...
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Request Timeline
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedRequest.approved_by && (
+                      <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Approved by</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedRequest.approved_by}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {selectedRequest.approved_at &&
+                              new Date(
+                                selectedRequest.approved_at
+                              ).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedRequest.denied_by && (
+                      <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                          <XCircle className="h-4 w-4 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Denied by</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedRequest.denied_by}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {selectedRequest.denied_at &&
+                              new Date(
+                                selectedRequest.denied_at
+                              ).toLocaleString()}
+                          </p>
+                          {selectedRequest.denial_reason && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                              <p className="text-sm text-red-800">
+                                <strong>Reason:</strong>{" "}
+                                {selectedRequest.denial_reason}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {selectedRequest.checked_out_at && (
+                      <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                          <AlertCircle className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Checked Out</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {selectedRequest.checked_out_at &&
+                              new Date(
+                                selectedRequest.checked_out_at
+                              ).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedRequest.checked_in_at && (
+                      <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Checked In</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {selectedRequest.checked_in_at &&
+                              new Date(
+                                selectedRequest.checked_in_at
+                              ).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

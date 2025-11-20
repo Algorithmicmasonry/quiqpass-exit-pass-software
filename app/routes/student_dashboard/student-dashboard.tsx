@@ -18,9 +18,11 @@ import {
 import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
 import type { Route } from "./+types/layout";
 import { getCards } from "./data";
+import { supabase } from "supabase/supabase-client";
+import Loader from "~/components/loader";
 
-export async function Loader({ request }: Route.LoaderArgs) {
-  const supabase = createServerSupabase(request);
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+
   const {
     data: { user },
     error: authError,
@@ -46,7 +48,7 @@ export async function Loader({ request }: Route.LoaderArgs) {
     .from("pass")
     .select("*")
     .eq("student_id", userId)
-    .order("request_at", { ascending: false })
+    .order("requested_at", { ascending: false })
     .limit(5);
 
   if (passesError) {
@@ -77,7 +79,13 @@ export async function Loader({ request }: Route.LoaderArgs) {
   };
 }
 
-type StudentLoaderData = Exclude<Awaited<ReturnType<typeof Loader>>, Response>;
+
+export function HydrateFallback() {
+  return <Loader/>;
+}
+
+
+type StudentLoaderData = Exclude<Awaited<ReturnType<typeof clientLoader>>, Response>;
 
 const StudentDashboard = ({
   loaderData,
@@ -88,13 +96,14 @@ const StudentDashboard = ({
     loaderData?.stats ?? { total: 0, pending: 0, approved: 0, denied: 0 }
   );
   const recentPasses = loaderData?.recentPasses ?? [];
+  const student = loaderData?.student;
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
       <main className="w-full space-y-6">
         <DashboardHeaders
           mainText="Student Dashboard"
-          subText="Welcome back! Here's your exit pass overview"
+          subText={`Welcome back ${student?.firstName ?? ""}! Here's your exit pass overview`}
           buttonText="Apply for Pass"
           buttonLink="/student-dashboard/apply-for-pass"
         />
