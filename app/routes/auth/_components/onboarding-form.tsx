@@ -47,7 +47,6 @@ type FormData = {
   guardianPhoneNumber: string;
   level: string;
   roomNumber: string;
-  // photoUrl: string // Commented out for later implementation
 };
 
 export default function OnboardingForm({

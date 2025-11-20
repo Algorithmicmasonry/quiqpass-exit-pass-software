@@ -8,7 +8,7 @@ import {
   Filter,
   MapPin,
   Search,
-  XCircle
+  XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { redirect } from "react-router";
@@ -51,6 +51,8 @@ import {
 } from "~/components/ui/table";
 import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
 import type { Route } from "./+types/my-pass-requests";
+import toast from "react-hot-toast";
+import { Form } from "react-router";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   try {
@@ -78,7 +80,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
         error: "Failed to load pass requests",
       };
     }
- 
+
     return {
       passes: passes || [],
       error: null,
@@ -90,6 +92,41 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       error: "An unexpected error occurred",
     };
   }
+}
+
+export async function clientAction({ request }: Route.ClientActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  // Safety check
+  if (intent !== "delete-pass") return null;
+
+  const passId = formData.get("passId") as string;
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    toast.error("You must be logged in to delete a pass");
+    return { error: "You must be logged in." };
+  }
+
+  // Delete only if the pass belongs to the user
+  const { error: deleteError } = await supabase
+    .from("pass")
+    .delete()
+    .eq("id", passId)
+    .eq("student_id", user.id);
+
+  if (deleteError) {
+    toast.error(`Delete pass error: ${deleteError}`);
+    console.error("Delete pass error:", deleteError);
+    return { error: "Failed to delete pass request." };
+  }
+  toast.success("Exit pass has beeen successfully deleted");
+  return { success: true };
 }
 
 export function HydrateFallback() {
@@ -321,8 +358,30 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Request ID</p>
-                  <p className="font-mono font-medium">{selectedRequest.id.slice(0,8)}...</p>
+                  <p className="font-mono font-medium">
+                    {selectedRequest.id.slice(0, 8)}...
+                  </p>
                 </div>
+
+                {selectedRequest && selectedRequest.status === "pending" && (
+                  <Form
+                    method="post"
+                    className="pt-4"
+                    action="/student-dashboard/my-pass-requests"
+                  >
+                    <input type="hidden" name="intent" value="delete-pass" />
+                    <input
+                      type="hidden"
+                      name="passId"
+                      value={selectedRequest.id}
+                    />
+
+                    <Button variant="destructive" className="w-full" onClick={() => setIsDialogOpen(false)}>
+                      Delete Request
+                    </Button>
+                  </Form>
+                )}
+
                 <Badge
                   variant="outline"
                   className={getStatusColor(selectedRequest.status)}
@@ -390,7 +449,9 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
                     <p className="text-sm text-muted-foreground">
                       Additional Notes
                     </p>
-                    <p className="text-sm mt-1">{selectedRequest.additional_notes}</p>
+                    <p className="text-sm mt-1">
+                      {selectedRequest.additional_notes}
+                    </p>
                   </div>
                 </div>
               </div>
