@@ -95,38 +95,48 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
-  const formData = await request.formData();
-  const intent = formData.get("intent");
+  try {
+    const formData = await request.formData();
+    const intent = formData.get("intent");
 
-  // Safety check
-  if (intent !== "delete-pass") return null;
+    // Safety check
+    if (intent !== "delete-pass") return null;
 
-  const passId = formData.get("passId") as string;
+    const passId = formData.get("passId") as string;
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-  if (authError || !user) {
-    toast.error("You must be logged in to delete a pass");
-    return { error: "You must be logged in." };
-  }
+    if (authError || !user) {
+      toast.error("You must be logged in to delete a pass");
+      return { error: "You must be logged in." };
+    }
 
-  // Delete only if the pass belongs to the user
-  const { error: deleteError } = await supabase
-    .from("pass")
-    .delete()
-    .eq("id", passId)
-    .eq("student_id", user.id);
+    // Delete only if the pass belongs to the user
 
-  if (deleteError) {
-    toast.error(`Delete pass error: ${deleteError}`);
-    console.error("Delete pass error:", deleteError);
+    async function deleteRequest(userId: string, passId: string) {
+      const { error: deleteError } = await supabase
+        .from("pass")
+        .delete()
+        .eq("id", passId)
+        .eq("student_id", userId);
+    }
+
+    toast.promise(deleteRequest(user.id, passId), {
+      loading: "Deleting Request....",
+      success: "Request Deleted Successfully",
+      error: "Error Deleting Request",
+    });
+
+    // toast.success("Exit pass has beeen successfully deleted");
+    return { success: true };
+  } catch (error) {
+    toast.error(`Delete pass error: ${error}`);
+    console.error("Delete pass error:", error);
     return { error: "Failed to delete pass request." };
   }
-  toast.success("Exit pass has beeen successfully deleted");
-  return { success: true };
 }
 
 export function HydrateFallback() {
@@ -376,7 +386,11 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
                       value={selectedRequest.id}
                     />
 
-                    <Button variant="destructive" className="w-full" onClick={() => setIsDialogOpen(false)}>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
                       Delete Request
                     </Button>
                   </Form>
