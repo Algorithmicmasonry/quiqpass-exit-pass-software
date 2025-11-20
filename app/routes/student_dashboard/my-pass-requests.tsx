@@ -483,17 +483,14 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
                     <div className="flex flex-col gap-1">
                       <p className="font-medium">
                         {new Date(
-                          selectedRequest.departure_date
-                        ).toLocaleDateString("en-US", {
+                          `${selectedRequest.departure_date}T${selectedRequest.departure_time}`
+                        ).toLocaleString("en-NG", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatTime(selectedRequest.departure_time)}
                       </p>
                     </div>
                   </div>

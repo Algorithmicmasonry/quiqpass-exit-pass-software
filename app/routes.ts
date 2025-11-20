@@ -14,6 +14,7 @@ export default [
  route("/student-dashboard/apply-for-pass", "routes/student_dashboard/apply-for-pass.tsx"),
  route("/student-dashboard/my-pass-requests", "routes/student_dashboard/my-pass-requests.tsx"),
  route("/student-dashboard/my-profile", "routes/student_dashboard/profile.tsx"),
+ route("/student-dashboard/notifications", "routes/student_dashboard/notifications.tsx"),
   ]),
   route("/test", "dashboard/page.tsx"),
   route("dashboard", "routes/auth/dashboard.tsx")

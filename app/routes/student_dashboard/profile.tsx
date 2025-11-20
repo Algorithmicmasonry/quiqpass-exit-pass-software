@@ -20,7 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { femaleHostels, levels, MaleHostels } from "../../../data/onboardingData"
+import {
+  femaleHostels,
+  levels,
+  MaleHostels,
+} from "../../../data/onboardingData";
 import { Form, useNavigation } from "react-router";
 import type { Route } from "./+types/profile";
 import toast from "react-hot-toast";
@@ -29,6 +33,7 @@ import { AlertCircle } from "lucide-react";
 import { supabase } from "supabase/supabase-client";
 import { redirect } from "react-router";
 import { string } from "zod";
+import Loader from "~/components/loader";
 
 type FormData = {
   firstName: string;
@@ -49,8 +54,11 @@ type FormData = {
 export async function clientAction({ request }: Route.ClientActionArgs) {
   try {
     // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return {
         error: true,
@@ -59,16 +67,20 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     }
 
     const formData = await request.formData();
-    
+
     // Extract form data
     const updateData = {
       first_name: formData.get("firstName")?.toString().trim(),
       last_name: formData.get("lastName")?.toString().trim(),
       phone_number: formData.get("phone")?.toString().trim(),
+      email: formData.get("email")?.toString().trim(),
       level: parseInt(formData.get("level")?.toString() || "0"),
       room_number: formData.get("roomNumber")?.toString().trim(),
       guardian_name: formData.get("guardianName")?.toString().trim(),
-      guardian_phone_number: formData.get("guardianPhoneNumber")?.toString().trim(),
+      guardian_phone_number: formData
+        .get("guardianPhoneNumber")
+        ?.toString()
+        .trim(),
       hostel_id: string,
     };
 
@@ -80,7 +92,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         .select("id")
         .eq("name", hostelName)
         .single();
-      
+
       if (hostel) {
         updateData.hostel_id = hostel.id;
       }
@@ -105,12 +117,13 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
       user_id: user.id,
       action: "registered", // Using the closest available action from your schema
     });
-
+    toast.success("Profile updated successfully!");
     return {
       error: false,
       message: "Profile updated successfully!",
     };
   } catch (error) {
+    toast.error("An unexpected error occurred. Please try again.");
     console.error("Unexpected error updating profile:", error);
     return {
       error: true,
@@ -122,8 +135,11 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   try {
     // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return redirect("/login");
     }
@@ -131,14 +147,16 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     // Fetch student profile with hostel information
     const { data: student, error: studentError } = await supabase
       .from("student")
-      .select(`
+      .select(
+        `
         *,
         hostel:hostel_id (
           id,
           name,
           gender
         )
-      `)
+      `
+      )
       .eq("id", user.id)
       .single();
 
@@ -163,14 +181,18 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   }
 }
 
-export default function ProfilePage({ 
-  loaderData, 
-  actionData 
+export function HydrateFallback() {
+  return <Loader />;
+}
+
+export default function ProfilePage({
+  loaderData,
+  actionData,
 }: Route.ComponentProps) {
   const { student, error } = loaderData;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -206,9 +228,10 @@ export default function ProfilePage({
     }
   }, [student]);
 
-
-
-  const handleInputChange = (field: keyof FormData, value: string | boolean) => {
+  const handleInputChange = (
+    field: keyof FormData,
+    value: string | boolean
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -307,7 +330,9 @@ export default function ProfilePage({
                   id="firstName"
                   name="firstName"
                   value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("firstName", e.target.value)
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -317,7 +342,9 @@ export default function ProfilePage({
                   id="lastName"
                   name="lastName"
                   value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("lastName", e.target.value)
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -341,8 +368,10 @@ export default function ProfilePage({
                 <Input
                   id="matricNo"
                   value={formData.matricNo}
-                  disabled={!isEditing}
-                  onChange={(e) => handleInputChange("matricNo", e.target.value)}
+                  disabled
+                  onChange={(e) =>
+                    handleInputChange("matricNo", e.target.value)
+                  }
                   className="bg-muted text-black"
                 />
               </div>
@@ -422,7 +451,9 @@ export default function ProfilePage({
                   id="roomNumber"
                   name="roomNumber"
                   value={formData.roomNumber}
-                  onChange={(e) => handleInputChange("roomNumber", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("roomNumber", e.target.value)
+                  }
                   disabled={!isEditing}
                   placeholder="e.g., A201"
                 />
@@ -448,7 +479,9 @@ export default function ProfilePage({
                 id="guardianName"
                 name="guardianName"
                 value={formData.guardianName}
-                onChange={(e) => handleInputChange("guardianName", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("guardianName", e.target.value)
+                }
                 disabled={!isEditing}
                 placeholder="Enter parent or guardian name"
               />
@@ -477,7 +510,10 @@ export default function ProfilePage({
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="notifyParent" className="flex items-center gap-2">
+                <Label
+                  htmlFor="notifyParent"
+                  className="flex items-center gap-2"
+                >
                   <Bell className="h-4 w-4" />
                   Parent Notifications
                 </Label>
@@ -499,11 +535,7 @@ export default function ProfilePage({
 
         {isEditing && (
           <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="gap-2"
-            >
+            <Button type="submit" disabled={isSubmitting} className="gap-2">
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

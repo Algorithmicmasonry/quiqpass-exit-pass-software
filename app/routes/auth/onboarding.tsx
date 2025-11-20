@@ -5,6 +5,7 @@ import { fetchOnboardingFormData } from "./actions/fetchOnboardingFormData";
 import { submitOnboardingFormData } from "./actions/submitOnboardingFormData";
 import toast from "react-hot-toast";
 import { checkIsOnboarded } from "./actions/checkIsOnboarded";
+import Loader from "~/components/loader";
 
 export async function clientLoader() {
   const onboarded = await checkIsOnboarded();
@@ -27,6 +28,10 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   }
 
   return res;
+}
+
+export function HydrateFallback() {
+  return <Loader />;
 }
 
 const OnboardingPage = ({ loaderData }: Route.ComponentProps) => {

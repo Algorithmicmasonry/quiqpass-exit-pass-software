@@ -22,7 +22,6 @@ import { supabase } from "supabase/supabase-client";
 import Loader from "~/components/loader";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-
   const {
     data: { user },
     error: authError,
@@ -50,6 +49,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     .eq("student_id", userId)
     .order("requested_at", { ascending: false })
     .limit(5);
+
+  // console.log("Passes data:", passes);
 
   if (passesError) {
     toast.error("Failed to load your passes. Please try again.");
@@ -79,13 +80,14 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   };
 }
 
-
 export function HydrateFallback() {
-  return <Loader/>;
+  return <Loader />;
 }
 
-
-type StudentLoaderData = Exclude<Awaited<ReturnType<typeof clientLoader>>, Response>;
+type StudentLoaderData = Exclude<
+  Awaited<ReturnType<typeof clientLoader>>,
+  Response
+>;
 
 const StudentDashboard = ({
   loaderData,
@@ -164,7 +166,11 @@ const StudentDashboard = ({
                       {getStatusIcon(request.status)}
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{request.type}</p>
+                          <p className="font-medium">
+                            {request.type == "long"
+                              ? "Long Pass"
+                              : "Short Pass"}
+                          </p>
                           <Badge
                             variant="outline"
                             className={getStatusColor(request.status)}
@@ -180,13 +186,16 @@ const StudentDashboard = ({
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(request.requested_at).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {new Date(request.created_at).toLocaleString(
+                              "en-NG",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
                           </span>
                         </div>
                       </div>
