@@ -7,12 +7,10 @@ import {
   ScrollRestoration,
 } from "react-router";
 
-import type { Route } from "./+types/root";
-import stylesheet from "./app.css?url";
 import { Toaster } from "react-hot-toast";
 import { useNavigation } from "react-router";
-import { Loader2 } from "lucide-react";
-import { AuthProvider } from "./providers/auth-provider";
+import type { Route } from "./+types/root";
+import stylesheet from "./app.css?url";
 import Loader from "./components/loader";
 
 export const links: Route.LinksFunction = () => [

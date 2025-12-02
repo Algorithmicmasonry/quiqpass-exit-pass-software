@@ -59,7 +59,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       message,
       is_read,
       created_at,
-      pass:pass_id (               // This is the correct syntax
+      pass:pass_id (   
         id,
         type,
         destination,
