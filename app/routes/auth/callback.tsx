@@ -10,7 +10,7 @@ export default function AuthCallback() {
     const hash = window.location.hash;
 
     async function handleOAuth() {
-      if (!hash) return;
+      if (!hash) return redirect("/login");
 
       const params = new URLSearchParams(hash.substring(1));
       const access_token = params.get("access_token");
@@ -52,9 +52,8 @@ export default function AuthCallback() {
           .maybeSingle();
 
         if (userLookupError) {
-
           console.error("User lookup error:", userLookupError.message);
-          return redirect("/login");
+          return;
         }
 
         // ✅ If user doesn't exist in users table, create entries
@@ -86,7 +85,7 @@ export default function AuthCallback() {
 
           if (studentInsertError) {
             console.error("Student creation error:", studentInsertError.message);
-            return redirect("/login");
+            return;
           }
 
           // Log the registration
@@ -104,16 +103,39 @@ export default function AuthCallback() {
 
         // ✅ User exists - check their type and redirect accordingly
         if (existingUser.user_type === "student") {
-          // Check student onboarding status
+          // Check student onboarding status - USE maybeSingle() NOT single()
           const { data: student, error: studentError } = await supabase
             .from("student")
             .select("id, is_onboarded")
             .eq("id", user.id)
-            .single();
+            .maybeSingle(); // ← CRITICAL: Use maybeSingle() not single()
 
           if (studentError) {
             console.error("Student lookup error:", studentError.message);
-            return redirect("login");
+            return;
+          }
+
+          // If no student record exists, create one
+          if (!student) {
+            console.log("Student record not found, creating...");
+            const { error: insertError } = await supabase
+              .from("student")
+              .insert({
+                id: user.id,
+                first_name: user.user_metadata?.full_name?.split(" ")[0] ?? "",
+                last_name: user.user_metadata?.full_name?.split(" ").slice(1).join(" ") ?? "",
+                email: user.email!,
+                is_onboarded: false,
+              });
+
+            if (insertError) {
+              console.error("Failed to create student record:", insertError.message);
+              return;
+            }
+
+            // Redirect to onboarding for new student
+            window.location.replace("/onboarding");
+            return;
           }
 
           // Log login
@@ -131,16 +153,22 @@ export default function AuthCallback() {
             navigate("/onboarding");
           }
         } else if (existingUser.user_type === "staff") {
-          // Get staff info to determine role
+          // Get staff info to determine role - USE maybeSingle() NOT single()
           const { data: staff, error: staffError } = await supabase
             .from("staff")
             .select("id, role")
             .eq("id", user.id)
-            .single();
+            .maybeSingle(); // ← CRITICAL: Use maybeSingle() not single()
 
           if (staffError) {
             console.error("Staff lookup error:", staffError.message);
-            return redirect("/login");
+            return;
+          }
+
+          if (!staff) {
+            console.error("Staff record not found for user:", user.id);
+            window.location.replace("/login");
+            return;
           }
 
           // Log login

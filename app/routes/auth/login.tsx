@@ -5,7 +5,7 @@ import LoginForm from "./_components/login-form";
 import { loginSchema } from "zod/loginIn";
 import { supabase } from "supabase/supabase-client";
 
-export async function action({ request }: Route.ActionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
 
   // Extract form data
