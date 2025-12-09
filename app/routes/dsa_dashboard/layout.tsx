@@ -14,6 +14,7 @@ import {
   IconSettings,
   IconUsers,
 } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
 import { Outlet, useLoaderData, redirect } from "react-router";
 import { supabase } from "supabase/supabase-client";
 import CustomSidebar from "~/components/global/custom-sidebar";
@@ -21,60 +22,122 @@ import { NavMain } from "~/components/nav-main";
 import { NavUser } from "~/components/nav-user";
 // TODO: Implement protected route logic
 
-export async function clientLoader() {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+// export async function clientLoader() {
+//   // -----------------------------
+//   // 1. Authentication
+//   // -----------------------------
+//   const {
+//     data: { user },
+//     error: authError,
+//   } = await supabase.auth.getUser();
 
-  if (!user || error) {
-    return redirect("login");
-  }
+//   if (authError || !user) {
+//     return redirect("/staff-login");
+//   }
 
-  const [profileRes, notifRes] = await Promise.all([
-    supabase
-      .from("student")
-      .select("first_name, last_name,email, photo_url")
-      .eq("id", user.id)
-      .single(),
+//   // -----------------------------
+//   // 2. Ensure Staff Is DSA
+//   // -----------------------------
+//   const { data: staff, error: staffError } = await supabase
+//     .from("staff")
+//     .select("first_name, last_name, email, photo_url, role")
+//     .eq("id", user.id)
+//     .single();
 
-    supabase
-      .from("notification")
-      .select("id", { count: "exact", head: true })
-      .eq("recipient_id", user.id)
-      .eq("recipient_type", "student")
-      .eq("is_read", false),
-  ]);
+//   if (staffError || !staff || staff.role !== "DSA") {
+//     return redirect("/login"); // or redirect("/staff-login")
+//   }
 
-  if (profileRes.error) {
-    console.error("Failed to load profile: ", profileRes.error);
-    return redirect("/login");
-  }
+//   // -----------------------------
+//   // 3. Get Unread Notifications
+//   // -----------------------------
+//   const { count: unreadCount } = await supabase
+//     .from("notification")
+//     .select("id", { count: "exact", head: true })
+//     .eq("recipient_id", user.id)
+//     .eq("recipient_type", "staff")   // IMPORTANT: staff notifications!
+//     .eq("is_read", false);
 
-  return {
-    user,
-    profile: profileRes.data,
-    unreadCount: notifRes.count || 0,
-  };
-}
+//   // -----------------------------
+//   // 4. Return Layout Data
+//   // -----------------------------
+//   return {
+//     user,
+//     profile: staff,   // NOT student
+//     unreadCount: unreadCount ?? 0,
+//   };
+// }
 
-export type DSALayoutData = Exclude<
-  Awaited<ReturnType<typeof clientLoader>>,
-  Response
->;
+// export type DSALayoutData = Exclude<
+//   Awaited<ReturnType<typeof clientLoader>>,
+//   Response
+// >;
+
+ 
 
 const DsaDashboardLayout = () => {
+
+  const [profile, setProfile] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    photo_url: "",
+    role: "", 
+  });
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        console.log("There is no user logged in yet")
+        // window.location.href = "/staff-login";
+        return redirect("/staff-login");
+      }
+      console.log("This is the supabase user: ", user)
+
+      // Fetch staff profile
+      const { data: staff } = await supabase
+        .from("staff")
+        .select("first_name, last_name, email, photo_url, role")
+        .eq("id", user.id)
+        .single();
+
+      if (!staff || staff.role !== "DSA") {
+        window.location.href = "/staff-login";
+        return;
+      }
+
+      // Fetch unread notifications
+      const { count: unread } = await supabase
+        .from("notification")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", user.id)
+        .eq("recipient_type", "staff")
+        .eq("is_read", false);
+
+      setProfile(staff);
+      setUnreadCount(unread ?? 0);
+    };
+
+    fetchData();
+  }, []);
+
+
   const gradientStyle = {
     background: "radial-gradient(125% 125% at 50% 10%,#ffffff 40%,#a78bfa 100%",
   };
 
-  const { profile, unreadCount } = useLoaderData() as DSALayoutData;
 
   const data = {
     user: {
       name: profile.first_name + " " + profile.last_name,
       email: profile.email,
       avatar: profile.photo_url || undefined,
+      unread:  unreadCount > 0 ? unreadCount : undefined
     },
     navMain: [
       {

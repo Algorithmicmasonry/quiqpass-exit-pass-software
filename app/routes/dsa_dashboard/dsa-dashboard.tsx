@@ -4,7 +4,7 @@ import {
   Clock,
   FileText,
   TrendingUp,
-  XCircle
+  XCircle,
 } from "lucide-react";
 import { Link, redirect } from "react-router";
 import { supabase } from "supabase/supabase-client";
@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import type { Route } from "./+types/dsa-dashboard";
-
+import Loader from "~/components/loader";
 
 export interface RawPassRequest {
   id: string;
@@ -37,7 +37,6 @@ export interface RawPassRequest {
   };
 }
 
-
 interface PassRequest {
   id: string;
   student_id: string;
@@ -55,6 +54,9 @@ interface PassRequest {
   };
 }
 
+export function HydrateFallback () {
+  return <Loader/>
+}
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   try {
@@ -93,47 +95,59 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+    const monthEnd = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    );
 
     // -----------------------------
     // 4. Dashboard Counts
     // -----------------------------
-    const [{ data: pendingPasses }, { data: dsaApprovedToday }, { data: csoApprovedToday },
-      { data: csoDeniedToday }, { data: deniedToday }, { data: totalRequests }] =
-      await Promise.all([
-        supabase.from("pass").select("id").eq("status", "pending"),
-        supabase
-          .from("pass")
-          .select("id")
-          .eq("status", "dsa_approved")
-          .gte("dsa_approved_at", today.toISOString())
-          .lt("dsa_approved_at", tomorrow.toISOString()),
-        supabase
-          .from("pass")
-          .select("id")
-          .eq("status", "cso_approved")
-          .gte("cso_approved_at", today.toISOString())
-          .lt("cso_approved_at", tomorrow.toISOString()),
-        supabase
-          .from("pass")
-          .select("id")
-          .eq("status", "rejected")
-          .eq("rejected_by_role", "CSO")
-          .gte("rejected_at", today.toISOString())
-          .lt("rejected_at", tomorrow.toISOString()),
-        supabase
-          .from("pass")
-          .select("id")
-          .eq("status", "rejected")
-          .eq("rejected_by_role", "DSA")
-          .gte("rejected_at", today.toISOString())
-          .lt("rejected_at", tomorrow.toISOString()),
-        supabase
-          .from("pass")
-          .select("id")
-          .gte("requested_at", monthStart.toISOString())
-          .lte("requested_at", monthEnd.toISOString()),
-      ]);
+    const [
+      { data: pendingPasses },
+      { data: dsaApprovedToday },
+      { data: csoApprovedToday },
+      { data: csoDeniedToday },
+      { data: deniedToday },
+      { data: totalRequests },
+    ] = await Promise.all([
+      supabase.from("pass").select("id").eq("status", "pending"),
+      supabase
+        .from("pass")
+        .select("id")
+        .eq("status", "dsa_approved")
+        .gte("dsa_approved_at", today.toISOString())
+        .lt("dsa_approved_at", tomorrow.toISOString()),
+      supabase
+        .from("pass")
+        .select("id")
+        .eq("status", "cso_approved")
+        .gte("cso_approved_at", today.toISOString())
+        .lt("cso_approved_at", tomorrow.toISOString()),
+      supabase
+        .from("pass")
+        .select("id")
+        .eq("status", "rejected")
+        .eq("rejected_by_role", "CSO")
+        .gte("rejected_at", today.toISOString())
+        .lt("rejected_at", tomorrow.toISOString()),
+      supabase
+        .from("pass")
+        .select("id")
+        .eq("status", "rejected")
+        .eq("rejected_by_role", "DSA")
+        .gte("rejected_at", today.toISOString())
+        .lt("rejected_at", tomorrow.toISOString()),
+      supabase
+        .from("pass")
+        .select("id")
+        .gte("requested_at", monthStart.toISOString())
+        .lte("requested_at", monthEnd.toISOString()),
+    ]);
 
     // -----------------------------
     // 5. Recent Requests With Student Details
@@ -149,7 +163,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
         status,
         requested_at,
         student:student_id (
-    
+    has_special_privilege,
           first_name,
           last_name,
           matric_no,
@@ -168,23 +182,26 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     // -----------------------------
     // 6. Transform Into Typed Model
     // -----------------------------
-    const transformedRequests: PassRequest[] = (recentRequests ?? []).map((req) => ({
-      id: req.id,
-      student_id: req.student_id,
-      type: req.type,
-      destination: req.destination,
-      reason: req.reason,
-      status: req.status,
-      requested_at: req.requested_at,
-      student: {
-        // has_special_privilege: req.student?.[0]?.has_special_privilege ?? false,
-        has_special_privilege: false,
-        first_name: req.student?.[0]?.first_name ?? "",
-        last_name: req.student?.[0]?.last_name ?? "",
-        matric_no: req.student?.[0]?.matric_no ?? "",
-        hostel: req.student?.[0]?.hostel?.[0] ?? null,
-      },
-    }));
+    const transformedRequests: PassRequest[] = (recentRequests ?? []).map(
+      (req) => ({
+        id: req.id,
+        student_id: req.student_id,
+        type: req.type,
+        destination: req.destination,
+        reason: req.reason,
+        status: req.status,
+        requested_at: req.requested_at,
+        student: {
+          has_special_privilege:
+            req.student?.[0]?.has_special_privilege ?? false,
+
+          first_name: req.student?.[0]?.first_name ?? "",
+          last_name: req.student?.[0]?.last_name ?? "",
+          matric_no: req.student?.[0]?.matric_no ?? "",
+          hostel: req.student?.[0]?.hostel?.[0] ?? null,
+        },
+      })
+    );
 
     // -----------------------------
     // 7. Sorting Rules
@@ -197,8 +214,10 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
     const sortedRequests = transformedRequests.sort((a, b) => {
       // Special privilege first
-      if (a.student.has_special_privilege && !b.student.has_special_privilege) return -1;
-      if (!a.student.has_special_privilege && b.student.has_special_privilege) return 1;
+      if (a.student.has_special_privilege && !b.student.has_special_privilege)
+        return -1;
+      if (!a.student.has_special_privilege && b.student.has_special_privilege)
+        return 1;
 
       // Urgent reasons
       const aUrgent = urgentReasons.some((r) =>
@@ -212,7 +231,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       if (!aUrgent && bUrgent) return 1;
 
       // Newest first
-      return new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime();
+      return (
+        new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
+      );
     });
 
     // -----------------------------
