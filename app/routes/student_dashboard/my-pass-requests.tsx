@@ -376,7 +376,7 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
                     {selectedRequest.id.slice(0, 8)}...
                   </p>
                 </div>
-                <div className="flex flex-col md:flex-row md:gap-6 items-center justify-center gap-2">
+                <div className="flex flex-col md:flex-row md:gap-6 items-center justify-center gap-4">
                   {selectedRequest && selectedRequest.status === "pending" && (
                     <Form
                       method="post"
