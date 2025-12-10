@@ -2,10 +2,11 @@ import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import { Suspense } from "react";
 import toast from "react-hot-toast";
 import { Link, redirect } from "react-router";
-import { createServerSupabase } from "supabase/server";
+import { supabase } from "supabase/supabase-client";
 import { DashboardHeaders } from "~/components/dashboard";
 import DashboardSkeleton from "~/components/dashboard-skeleton";
 import NoDataPage from "~/components/global/no-data";
+import Loader from "~/components/loader";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -18,8 +19,6 @@ import {
 import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
 import type { Route } from "./+types/layout";
 import { getCards } from "./data";
-import { supabase } from "supabase/supabase-client";
-import Loader from "~/components/loader";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const {

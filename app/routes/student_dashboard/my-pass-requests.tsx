@@ -53,6 +53,7 @@ import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
 import type { Route } from "./+types/my-pass-requests";
 import toast from "react-hot-toast";
 import { Form } from "react-router";
+import { formatDate, formatTime } from "./actions";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   try {
@@ -169,16 +170,7 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
   });
 
   // Helper function to format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
-  };
 
-  // Helper function to format time
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return "N/A";
-    return timeString.slice(0, 5); // Convert "HH:MM:SS" to "HH:MM"
-  };
 
   const handleViewDetails = (request: PassRequest) => {
     setSelectedRequest(request);

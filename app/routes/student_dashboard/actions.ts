@@ -201,3 +201,14 @@ export async function applyForStudentPass(formData: FormData, request: Request) 
     };
   }
 }
+
+export const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Helper function to format time
+export const formatTime = (timeString: string | null) => {
+    if (!timeString) return "N/A";
+    return timeString.slice(0, 5); // Convert "HH:MM:SS" to "HH:MM"
+  };
