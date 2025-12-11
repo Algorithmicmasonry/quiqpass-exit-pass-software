@@ -1,5 +1,15 @@
-import { ArrowRight, Calendar, MapPin } from "lucide-react";
-import { Suspense } from "react";
+import {
+  AlarmClock,
+  AlertCircle,
+  ArrowRight,
+  Calendar,
+  CheckCircle,
+  Clock,
+  FileText,
+  MapPin,
+  XCircle,
+} from "lucide-react";
+import { Suspense, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, redirect } from "react-router";
 import { supabase } from "supabase/supabase-client";
@@ -19,6 +29,17 @@ import {
 import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
 import type { Route } from "./+types/layout";
 import { getCards } from "./data";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Form } from "react-router";
+import { Separator } from "~/components/ui/separator";
+import type { PassRequest } from "types";
+import { formatDate, formatTime } from "./actions";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const {
@@ -88,8 +109,7 @@ type StudentLoaderData = Exclude<
   Response
 >;
 
-
-// TODO: Implement recent pass fetch details when a recent pass is clicked 
+// TODO: Implement recent pass fetch details when a recent pass is clicked
 const StudentDashboard = ({
   loaderData,
 }: {
@@ -100,6 +120,15 @@ const StudentDashboard = ({
   );
   const recentPasses = loaderData?.recentPasses ?? [];
   const student = loaderData?.student;
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<PassRequest | null>(
+    null
+  );
+
+  const handleViewDetails = (request: PassRequest) => {
+    setSelectedRequest(request);
+    setIsDialogOpen(true);
+  };
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
@@ -163,7 +192,7 @@ const StudentDashboard = ({
                     key={request.id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-border rounded-lg"
                   >
-                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 ">
                       {getStatusIcon(request.status)}
                       <div>
                         <div className="flex items-center gap-2">
@@ -180,7 +209,7 @@ const StudentDashboard = ({
                               request.status.slice(1)}
                           </Badge>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm mt-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm mt-1 ">
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
                             {request.destination}
@@ -201,11 +230,22 @@ const StudentDashboard = ({
                         </div>
                       </div>
                     </div>
-                    <div className="text-left sm:text-right w-full sm:w-auto">
-                      <p className="text-sm ">
-                        Submitted{" "}
-                        {new Date(request.requested_at).toLocaleDateString()}
-                      </p>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-left sm:text-right">
+                        <p className="text-sm">
+                          Submitted{" "}
+                          {new Date(request.requested_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleViewDetails(request)}
+                        className="gap-2"
+                      >
+                        View Details
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -213,6 +253,351 @@ const StudentDashboard = ({
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto pt-[20px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Pass Request Details
+              </DialogTitle>
+              <DialogDescription>
+                Complete information about your exit pass request
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedRequest && (
+              <div className="space-y-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Request ID</p>
+                    <p className="font-mono font-medium">
+                      {selectedRequest.id.slice(0, 8)}...
+                    </p>
+                  </div>
+                  <div className="flex flex-col md:flex-row md:gap-6 items-center justify-center gap-4">
+                    {selectedRequest &&
+                      selectedRequest.status === "pending" && (
+                        <Form
+                          method="post"
+                          className="pt-4"
+                          action="/student-dashboard/my-pass-requests"
+                        >
+                          <input
+                            type="hidden"
+                            name="intent"
+                            value="delete-pass"
+                          />
+                          <input
+                            type="hidden"
+                            name="passId"
+                            value={selectedRequest.id}
+                          />
+                          <Button
+                            variant="destructive"
+                            className="w-full"
+                            onClick={() => setIsDialogOpen(false)}
+                          >
+                            Delete Request
+                          </Button>
+                        </Form>
+                      )}
+
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(selectedRequest.status)}
+                    >
+                      <span className="flex items-center gap-1 p-2 text-md">
+                        {getStatusIcon(selectedRequest.status)}
+                        {selectedRequest.status.charAt(0).toUpperCase() +
+                          selectedRequest.status.slice(1)}
+                      </span>
+                    </Badge>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Pass Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pass Type</p>
+                      <Badge
+                        variant="outline"
+                        className="bg-primary/10 text-primary border-primary/20 mt-1 text-sm"
+                      >
+                        {selectedRequest.type}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Submitted On
+                      </p>
+                      <p className="font-medium mt-1">
+                        {new Date(
+                          selectedRequest.created_at
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Travel Details
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Reason for Exit
+                      </p>
+                      <p className="font-medium mt-1">
+                        {selectedRequest.reason}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Additional Notes
+                      </p>
+                      <p className="text-sm mt-1">
+                        {selectedRequest.additional_notes}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Schedule
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Departure</p>
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {new Date(
+                            `${selectedRequest.departure_date}T${selectedRequest.departure_time}`
+                          ).toLocaleString("en-NG", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedRequest.type == "long" && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Return</p>
+                        <div className="flex flex-col gap-1">
+                          <p className="font-medium">
+                            {formatDate(selectedRequest.return_date)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatTime(selectedRequest.return_time)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {selectedRequest.status === "pending" ? (
+                  // --------------------------
+                  // PENDING MESSAGE
+                  // --------------------------
+                  <p className={getStatusColor(selectedRequest.status)}>
+                    Pass has not yet been approved...
+                  </p>
+                ) : (
+                  // --------------------------
+                  // TIMELINE STARTS HERE
+                  // --------------------------
+                  <div className="space-y-4">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Request Timeline
+                    </h3>
+
+                    <div className="space-y-3">
+                      {/* --------------------------
+          IF REJECTED → STOP AND SHOW ONLY THIS
+      --------------------------- */}
+                      {selectedRequest.rejected_by ||
+                      selectedRequest.rejected_at ? (
+                        <div className="flex items-start gap-3">
+                          <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          </div>
+
+                          <div>
+                            <p className="font-medium text-sm">Rejected by</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedRequest.rejected_by_role}
+                            </p>
+
+                            {selectedRequest.rejected_at && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(
+                                  selectedRequest.rejected_at
+                                ).toLocaleString()}
+                              </p>
+                            )}
+
+                            {selectedRequest.rejection_reason && (
+                              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                                <p className="text-sm text-red-800">
+                                  <strong>Reason:</strong>{" "}
+                                  {selectedRequest.rejection_reason}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* --------------------------
+              DSA APPROVED
+          --------------------------- */}
+                          {(selectedRequest.dsa_approved_by ||
+                            selectedRequest.dsa_approved_at) && (
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              </div>
+
+                              <div>
+                                <p className="font-medium text-sm">
+                                  Approved by DSA
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Your pass request has been approved by the
+                                  DSA's office.
+                                </p>
+
+                                {selectedRequest.dsa_approved_at && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {new Date(
+                                      selectedRequest.dsa_approved_at
+                                    ).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* --------------------------
+              CSO APPROVAL OR WAITING
+          --------------------------- */}
+                          {selectedRequest.cso_approved_by ||
+                          selectedRequest.cso_approved_at ? (
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              </div>
+
+                              <div>
+                                <p className="font-medium text-sm">
+                                  Approved by CSO
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  You can now download your pass and leave the
+                                  school premises.
+                                </p>
+
+                                {selectedRequest.cso_approved_at && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {new Date(
+                                      selectedRequest.cso_approved_at
+                                    ).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <AlarmClock className="h-4 w-4 text-yellow-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  Pending CSO approval....
+                                </p>
+                                <p className="text-sm">
+                                  Your pass request has not yet been approved by
+                                  the CSO's office.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* CHECKED OUT */}
+                          {selectedRequest.checked_out_at && (
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <AlertCircle className="h-4 w-4 text-purple-600" />
+                              </div>
+
+                              <div>
+                                <p className="font-medium text-sm">
+                                  Checked Out
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(
+                                    selectedRequest.checked_out_at
+                                  ).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* CHECKED IN */}
+                          {selectedRequest.checked_in_at && (
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <CheckCircle className="h-4 w-4 text-blue-600" />
+                              </div>
+
+                              <div>
+                                <p className="font-medium text-sm">
+                                  Checked In
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(
+                                    selectedRequest.checked_in_at
+                                  ).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </Suspense>
   );

@@ -86,10 +86,14 @@ export type PassRequest = {
     student_id: string;
     type: string;
     updated_at: string;
-    approved_by: string;
-    approved_at: string;
-    denied_by: string;
-    denied_at: string;
+    dsa_approved_by: string;
+    dsa_approved_at: string;
+    cso_approved_at: string;
+    cso_approved_by: string;
+    rejected_by: string;
+    rejected_at: string;
+    rejection_reason: string;
+    rejected_by_role: string;
     denial_reason: string;
     checked_out_at: string;
     checked_in_at: string;
