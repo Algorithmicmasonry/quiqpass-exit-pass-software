@@ -144,11 +144,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       console.log("Error fetching pending passes:", pendingError);
       return;
     }
-    // Fetch DSA approved passes
     const { data: dsaApprovedToday, error: dsaApprovedError } = await supabase
       .from("pass")
       .select("id")
-      .eq("status", "dsa_approved")
       .gte("dsa_approved_at", today.toISOString())
       .lt("dsa_approved_at", tomorrow.toISOString());
 

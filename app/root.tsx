@@ -12,6 +12,7 @@ import { useNavigation } from "react-router";
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import Loader from "./components/loader";
+import { Analytics } from "@vercel/analytics/next";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -53,6 +54,7 @@ export default function App() {
 
   return (
     <div>
+      <Analytics />
       {isNavigating && <Loader />}
       <Outlet />
     </div>
