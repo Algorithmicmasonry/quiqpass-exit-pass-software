@@ -257,6 +257,7 @@ export const generatePassDocument = (pass: PassRequest, studentName: string) => 
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           padding: 20px;
           background: #f9fafb;
+          color: black
         }
         
         .container {
@@ -292,6 +293,7 @@ export const generatePassDocument = (pass: PassRequest, studentName: string) => 
         .header-content {
           text-align: center;
           padding-top: 5px;
+          color: black;
         }
         
         .header h1 {
@@ -307,7 +309,7 @@ export const generatePassDocument = (pass: PassRequest, studentName: string) => 
         .status-badge {
           display: inline-block;
           background: ${statusColor};
-          color: white;
+          color: black;
           padding: 5px 12px;
           border-radius: 15px;
           font-size: 12px;
