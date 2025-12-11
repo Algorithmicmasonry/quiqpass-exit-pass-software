@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  Download,
   FileText,
   MapPin,
   XCircle,
@@ -39,7 +40,7 @@ import {
 import { Form } from "react-router";
 import { Separator } from "~/components/ui/separator";
 import type { PassRequest } from "types";
-import { formatDate, formatTime } from "./actions";
+import { formatDate, formatTime, generatePassDocument } from "./actions";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const {
@@ -79,7 +80,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   const totalPasses = passes ? passes.length : 0;
   const pendingCount = passes
-    ? passes.filter((pass) => pass.status === "pending" || pass.status === "dsa_approved").length
+    ? passes.filter(
+        (pass) => pass.status === "pending" || pass.status === "dsa_approved"
+      ).length
     : 0;
   const approvedCount = passes
     ? passes.filter((pass) => pass.status === "approved").length
@@ -264,6 +267,22 @@ const StudentDashboard = ({
               <DialogDescription>
                 Complete information about your exit pass request
               </DialogDescription>
+
+              {selectedRequest && selectedRequest.status === "cso_approved" && (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    generatePassDocument(
+                      selectedRequest,
+                      student?.first_name + " " + student?.last_name
+                    )
+                  }
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Pass
+                </Button>
+              )}
             </DialogHeader>
 
             {selectedRequest && (
