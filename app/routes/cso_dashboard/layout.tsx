@@ -20,58 +20,9 @@ import { SidebarFeedbackForm } from "~/components/global/sidebar-form";
 import { NavMain } from "~/components/nav-main";
 // TODO: Implement feedback sending through sidebar feedback form
 
-// export async function clientLoader() {
-//   // -----------------------------
-//   // 1. Authentication
-//   // -----------------------------
-//   const {
-//     data: { user },
-//     error: authError,
-//   } = await supabase.auth.getUser();
 
-//   if (authError || !user) {
-//     return redirect("/staff-login");
-//   }
 
-//   // -----------------------------
-//   // 2. Ensure Staff Is DSA
-//   // -----------------------------
-//   const { data: staff, error: staffError } = await supabase
-//     .from("staff")
-//     .select("first_name, last_name, email, photo_url, role")
-//     .eq("id", user.id)
-//     .single();
-
-//   if (staffError || !staff || staff.role !== "DSA") {
-//     return redirect("/login"); // or redirect("/staff-login")
-//   }
-
-//   // -----------------------------
-//   // 3. Get Unread Notifications
-//   // -----------------------------
-//   const { count: unreadCount } = await supabase
-//     .from("notification")
-//     .select("id", { count: "exact", head: true })
-//     .eq("recipient_id", user.id)
-//     .eq("recipient_type", "staff")   // IMPORTANT: staff notifications!
-//     .eq("is_read", false);
-
-//   // -----------------------------
-//   // 4. Return Layout Data
-//   // -----------------------------
-//   return {
-//     user,
-//     profile: staff,   // NOT student
-//     unreadCount: unreadCount ?? 0,
-//   };
-// }
-
-// export type DSALayoutData = Exclude<
-//   Awaited<ReturnType<typeof clientLoader>>,
-//   Response
-// >;
-
-const DsaDashboardLayout = () => {
+const CSODashboardLayout = () => {
   const [profile, setProfile] = useState({
     first_name: "",
     last_name: "",
@@ -81,45 +32,6 @@ const DsaDashboardLayout = () => {
   });
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const {
-  //       data: { user },
-  //     } = await supabase.auth.getUser();
-
-  //     if (!user) {
-  //       console.log("There is no user logged in yet")
-  //       // window.location.href = "/staff-login";
-  //       return redirect("/staff-login");
-  //     }
-  //     console.log("This is the supabase user: ", user)
-
-  //     // Fetch staff profile
-  //     const { data: staff } = await supabase
-  //       .from("staff")
-  //       .select("first_name, last_name, email, photo_url, role")
-  //       .eq("id", user.id)
-  //       .single();
-
-  //     if (!staff || staff.role !== "DSA") {
-  //       window.location.href = "/staff-login";
-  //       return;
-  //     }
-
-  //     // Fetch unread notifications
-  //     const { count: unread } = await supabase
-  //       .from("notification")
-  //       .select("id", { count: "exact", head: true })
-  //       .eq("recipient_id", user.id)
-  //       .eq("recipient_type", "staff")
-  //       .eq("is_read", false);
-
-  //     setProfile(staff);
-  //     setUnreadCount(unread ?? 0);
-  //   };
-
-  //   fetchData();
-  // }, []);
 
   const gradientStyle = {
     background: "radial-gradient(125% 125% at 50% 10%,#ffffff 40%,#a78bfa 100%",
@@ -135,9 +47,9 @@ const DsaDashboardLayout = () => {
     navMain: [
       {
         title: "Dashboard",
-        url: "/dsa-dashboard",
+        url: "/cso-dashboard",
         icon: IconDashboard,
-        route: "dsa-dashboard",
+        route: "cso-dashboard",
       },
       {
         title: "Pass Requests",
@@ -261,7 +173,7 @@ const DsaDashboardLayout = () => {
           gradientStyle={gradientStyle}
         >
           <NavMain items={data.navMain} />
-          <SidebarFeedbackForm route="DSA"/>
+          <SidebarFeedbackForm route="CS0"/>
           {/* <NavUser user={data.user} /> */}
         </CustomSidebar>
 
@@ -276,4 +188,4 @@ const DsaDashboardLayout = () => {
   );
 };
 
-export default DsaDashboardLayout;
+export default CSODashboardLayout;

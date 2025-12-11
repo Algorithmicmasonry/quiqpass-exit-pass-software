@@ -1,4 +1,5 @@
 import {
+  AlarmClock,
   AlertCircle,
   ArrowRight,
   Calendar,
@@ -170,7 +171,6 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
   });
 
   // Helper function to format date
-
 
   const handleViewDetails = (request: PassRequest) => {
     setSelectedRequest(request);
@@ -508,94 +508,171 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
 
               <Separator />
 
-              {selectedRequest.status == "pending" ? (
+              {selectedRequest.status === "pending" ? (
+                // --------------------------
+                // PENDING MESSAGE
+                // --------------------------
                 <p className={getStatusColor(selectedRequest.status)}>
                   Pass has not yet been approved...
                 </p>
               ) : (
+                // --------------------------
+                // TIMELINE STARTS HERE
+                // --------------------------
                 <div className="space-y-4">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     Request Timeline
                   </h3>
+
                   <div className="space-y-3">
-                    {selectedRequest.approved_by && (
-                      <div className="flex items-start gap-3">
-                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">Approved by</p>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedRequest.approved_by}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {selectedRequest.approved_at &&
-                              new Date(
-                                selectedRequest.approved_at
-                              ).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedRequest.denied_by && (
+                    {/* --------------------------
+                       IF REJECTED → STOP AND SHOW ONLY THIS
+                   --------------------------- */}
+                    {selectedRequest.rejected_by ||
+                    selectedRequest.rejected_at ? (
                       <div className="flex items-start gap-3">
                         <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
                           <XCircle className="h-4 w-4 text-red-600" />
                         </div>
+
                         <div>
-                          <p className="font-medium text-sm">Denied by</p>
+                          <p className="font-medium text-sm">Rejected by</p>
                           <p className="text-sm text-muted-foreground">
-                            {selectedRequest.denied_by}
+                            {selectedRequest.rejected_by_role}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {selectedRequest.denied_at &&
-                              new Date(
-                                selectedRequest.denied_at
+
+                          {selectedRequest.rejected_at && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(
+                                selectedRequest.rejected_at
                               ).toLocaleString()}
-                          </p>
-                          {selectedRequest.denial_reason && (
+                            </p>
+                          )}
+
+                          {selectedRequest.rejection_reason && (
                             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
                               <p className="text-sm text-red-800">
                                 <strong>Reason:</strong>{" "}
-                                {selectedRequest.denial_reason}
+                                {selectedRequest.rejection_reason}
                               </p>
                             </div>
                           )}
                         </div>
                       </div>
-                    )}
-                    {selectedRequest.checked_out_at && (
-                      <div className="flex items-start gap-3">
-                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                          <AlertCircle className="h-4 w-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">Checked Out</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {selectedRequest.checked_out_at &&
-                              new Date(
-                                selectedRequest.checked_out_at
-                              ).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedRequest.checked_in_at && (
-                      <div className="flex items-start gap-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <CheckCircle className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">Checked In</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {selectedRequest.checked_in_at &&
-                              new Date(
-                                selectedRequest.checked_in_at
-                              ).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
+                    ) : (
+                      <>
+                        {/* --------------------------
+                           DSA APPROVED
+                       --------------------------- */}
+                        {(selectedRequest.dsa_approved_by ||
+                          selectedRequest.dsa_approved_at) && (
+                          <div className="flex items-start gap-3">
+                            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </div>
+
+                            <div>
+                              <p className="font-medium text-sm">
+                                Approved by DSA
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Your pass request has been approved by the DSA's
+                                office.
+                              </p>
+
+                              {selectedRequest.dsa_approved_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(
+                                    selectedRequest.dsa_approved_at
+                                  ).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* --------------------------
+                           CSO APPROVAL OR WAITING
+                       --------------------------- */}
+                        {selectedRequest.cso_approved_by ||
+                        selectedRequest.cso_approved_at ? (
+                          <div className="flex items-start gap-3">
+                            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </div>
+
+                            <div>
+                              <p className="font-medium text-sm">
+                                Approved by CSO
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                You can now download your pass and leave the
+                                school premises.
+                              </p>
+
+                              {selectedRequest.cso_approved_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(
+                                    selectedRequest.cso_approved_at
+                                  ).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-3">
+                            <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                              <AlarmClock className="h-4 w-4 text-yellow-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                Pending CSO approval....
+                              </p>
+                              <p className="text-sm">
+                                Your pass request has not yet been approved by
+                                the CSO's office.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CHECKED OUT */}
+                        {selectedRequest.checked_out_at && (
+                          <div className="flex items-start gap-3">
+                            <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                              <AlertCircle className="h-4 w-4 text-purple-600" />
+                            </div>
+
+                            <div>
+                              <p className="font-medium text-sm">Checked Out</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(
+                                  selectedRequest.checked_out_at
+                                ).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CHECKED IN */}
+                        {selectedRequest.checked_in_at && (
+                          <div className="flex items-start gap-3">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                              <CheckCircle className="h-4 w-4 text-blue-600" />
+                            </div>
+
+                            <div>
+                              <p className="font-medium text-sm">Checked In</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(
+                                  selectedRequest.checked_in_at
+                                ).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

@@ -20,6 +20,9 @@ export default [
   layout("routes/dsa_dashboard/layout.tsx", [
     route("/dsa-dashboard", "routes/dsa_dashboard/dsa-dashboard.tsx"),
   ]),
+  layout("routes/cso_dashboard/layout.tsx", [
+route("cso-dashboard", "routes/cso_dashboard/cso-dashboard.tsx")
+  ]),
   route("/test", "dashboard/page.tsx"),
   route("dashboard", "routes/auth/dashboard.tsx")
  

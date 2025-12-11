@@ -13,7 +13,6 @@ interface CustomSidebarProps {
 const CustomSidebar: React.FC<CustomSidebarProps> = ({
   children,
   gradientStyle,
-  sidebarFooter,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const toggleSidebar = () => setIsOpen((prev) => !prev);

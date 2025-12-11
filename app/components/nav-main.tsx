@@ -35,15 +35,28 @@ export function NavMain({
           <SidebarMenuItem className="flex items-center gap-2">
             {items[0].route === "dsa-dashboard" ? (
               <SidebarMenuButton
-                tooltip="Apply For Pass"
+                tooltip="D.S.A Dashboard"
                 className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
               >
                 <Link
                   to="/dsa-dashboard"
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <CheckCircle className="w-4 h-4"/>
+                  <CheckCircle className="w-4 h-4" />
                   <span>D.S.A Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            ) : items[0].route === "cso-dashboard" ? (
+              <SidebarMenuButton
+                tooltip="C.S.O Dashboard"
+                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+              >
+                <Link
+                  to="/cso-dashboard"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>C.S.O Dashboard</span>
                 </Link>
               </SidebarMenuButton>
             ) : (

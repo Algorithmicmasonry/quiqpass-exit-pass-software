@@ -8,16 +8,14 @@ import {
 } from "~/components/ui/card";
 import { SidebarInput } from "~/components/ui/sidebar";
 
-export function SidebarFeedbackForm() {
+export function SidebarFeedbackForm({route}: {route: string}) {
   return (
     <Card className="gap-2 shadow-none w-[220px] ml-4 mt-auto">
       <CardHeader className="px-4">
-        <CardTitle className="text-sm uppercase ">
-          Report Issues Here
-        </CardTitle>
+        <CardTitle className="text-sm uppercase ">Report Issues Here</CardTitle>
         <CardDescription>
-          Please write any feedback or issues you encounter while using the DSA
-          Dashboard.
+          {`Please write any feedback or issues you encounter while using the ${route}
+          Dashboard.`}
         </CardDescription>
       </CardHeader>
       <CardContent className="px-4">
