@@ -8,6 +8,7 @@ import {
   MapPin,
   Phone,
   RefreshCcw,
+  ShieldUser,
   TrendingUp,
   User,
   X,
@@ -38,6 +39,7 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { useRevalidator } from "react-router";
 import type { Route } from "./+types/cso-dashboard";
+import { string } from "zod";
 
 // TODO: Confirm if pass limit tracking auto updates
 
@@ -58,6 +60,8 @@ export interface RawPassRequest {
   additional_notes: string | null;
   student: {
     has_special_privilege: boolean;
+    guardian_name: string;
+    guardian_phone_number: string;
     first_name: string;
     last_name: string;
     matric_no: string;
@@ -82,6 +86,8 @@ interface PassRequest {
   additional_notes: string | null;
   student: {
     has_special_privilege: boolean;
+    guardian_name: string;
+    guardian_phone_number: string;
     first_name: string;
     last_name: string;
     matric_no: string;
@@ -235,6 +241,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
         additional_notes,
         student:student_id (
           first_name,
+          guardian_name,
+          guardian_phone_number,
           last_name,
           matric_no,
           has_special_privilege,
@@ -274,6 +282,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       additional_notes: req.additional_notes,
       student: {
         has_special_privilege: req.student?.has_special_privilege || false,
+        guardian_name: req.student?.guardian_name || "",
+        guardian_phone_number: req.student?.guardian_phone_number || "",
         first_name: req.student?.first_name || "",
         last_name: req.student?.last_name || "",
         matric_no: req.student?.matric_no || "",
@@ -949,6 +959,28 @@ export default function CSODashboard({ loaderData }: Route.ComponentProps) {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Guardian name and phone number*/}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <ShieldUser className="h-5 w-5" />
+                  Guardian Information
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">
+                      {selectedPass?.student.guardian_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="font-medium">
+                      {selectedPass?.student.guardian_phone_number}
+                    </p>
+                  </div>
                 </div>
               </div>
 

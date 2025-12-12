@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { Form, redirect, useNavigate, useNavigation } from "react-router";
+import { Form, redirect, useLoaderData, useNavigate, useNavigation } from "react-router";
 import type { FormData, PassType } from "types";
 import { DashboardHeaders } from "~/components/dashboard";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
@@ -57,6 +57,47 @@ interface PassLimits {
   loading: boolean;
 }
 
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      throw redirect("/login");
+    }
+
+    // Fetch guardian contact for the current user only
+    const { data: guardianContact, error: fetchError } = await supabase
+      .from("student")
+      .select(`
+        guardian_name,
+        guardian_phone_number
+      `)
+      .eq("id", user.id) // Filter by current user
+      .single(); // Get single record instead of array
+
+    if (fetchError) {
+      console.error("Error fetching guardian contact:", fetchError);
+      throw new Error("Failed to fetch guardian information");
+    }
+
+    return {
+      guardianName: guardianContact?.guardian_name ?? "",
+      guardianPhoneNumber: guardianContact?.guardian_phone_number ?? "",
+    };
+  } catch (error) {
+    toast.error("Error loading guardian information");
+    console.error("Guardian information could not be fetched:", error);
+
+    return {
+      guardianName: "",
+      guardianPhoneNumber: "",
+    };
+  }
+}
+
 export async function clientAction({ request }: Route.ClientActionArgs) {
   let res;
   try {
@@ -86,6 +127,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 
 export default function ApplyPage({ actionData }: Route.ComponentProps) {
   console.log("This is the action data: ", actionData);
+  const {guardianName, guardianPhoneNumber} = useLoaderData()
   const navigate = useNavigate();
   const navigation = useNavigation();
   const isSubmitting =
@@ -99,8 +141,8 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
     departureTime: "",
     returnDate: "",
     returnTime: "",
-    emergencyContact: "",
-    emergencyPhone: "",
+    emergencyContact: guardianName,
+    emergencyPhone: guardianPhoneNumber,
     additionalNotes: "",
     parentNotification: true,
   });
@@ -117,18 +159,20 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
     async function fetchPassLimits() {
       try {
         // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         // Get current month-year
         const now = new Date();
-        const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
         // Check if student has special privilege
         const { data: student } = await supabase
-          .from('student')
-          .select('has_special_privilege')
-          .eq('id', user.id)
+          .from("student")
+          .select("has_special_privilege")
+          .eq("id", user.id)
           .single();
 
         if (student?.has_special_privilege) {
@@ -143,10 +187,10 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
 
         // Get pass limit tracking for current month
         const { data: tracking } = await supabase
-          .from('pass_limit_tracking')
-          .select('short_pass_count, long_pass_count')
-          .eq('student_id', user.id)
-          .eq('month_year', monthYear)
+          .from("pass_limit_tracking")
+          .select("short_pass_count, long_pass_count")
+          .eq("student_id", user.id)
+          .eq("month_year", monthYear)
           .maybeSingle();
 
         const shortCount = tracking?.short_pass_count || 0;
@@ -159,8 +203,8 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
           loading: false,
         });
       } catch (error) {
-        console.error('Error fetching pass limits:', error);
-        setPassLimits(prev => ({ ...prev, loading: false }));
+        console.error("Error fetching pass limits:", error);
+        setPassLimits((prev) => ({ ...prev, loading: false }));
       }
     }
 
@@ -201,7 +245,7 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
   // Check if selected pass type is available
   const canApplyForPassType = () => {
     if (passLimits.hasSpecialPrivilege) return true;
-    
+
     if (formData.passType === "short") {
       return passLimits.shortPassesRemaining > 0;
     } else {
@@ -212,15 +256,18 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
   // Get warning message if limit reached
   const getLimitWarning = () => {
     if (passLimits.hasSpecialPrivilege) return null;
-    
-    if (formData.passType === "short" && passLimits.shortPassesRemaining === 0) {
+
+    if (
+      formData.passType === "short" &&
+      passLimits.shortPassesRemaining === 0
+    ) {
       return "You have used all 2 short passes for this month. Please select a long pass or wait until next month.";
     }
-    
+
     if (formData.passType === "long" && passLimits.longPassesRemaining === 0) {
       return "You have used your 1 long pass for this month. Please select a short pass or wait until next month.";
     }
-    
+
     return null;
   };
 
@@ -239,21 +286,24 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
               <div className="flex-1">
                 <h3 className="font-semibold text-blue-900 mb-2">
-                  {passLimits.hasSpecialPrivilege 
-                    ? "Special Privilege Active" 
+                  {passLimits.hasSpecialPrivilege
+                    ? "Special Privilege Active"
                     : "Monthly Pass Limits"}
                 </h3>
                 {passLimits.hasSpecialPrivilege ? (
                   <p className="text-sm text-blue-700">
-                    You have unlimited passes this month due to special privilege status.
+                    You have unlimited passes this month due to special
+                    privilege status.
                   </p>
                 ) : (
                   <div className="space-y-1 text-sm text-blue-700">
                     <p>
-                      <strong>Short Passes:</strong> {passLimits.shortPassesRemaining} of 2 remaining
+                      <strong>Short Passes:</strong>{" "}
+                      {passLimits.shortPassesRemaining} of 2 remaining
                     </p>
                     <p>
-                      <strong>Long Passes:</strong> {passLimits.longPassesRemaining} of 1 remaining
+                      <strong>Long Passes:</strong>{" "}
+                      {passLimits.longPassesRemaining} of 1 remaining
                     </p>
                   </div>
                 )}
@@ -295,24 +345,31 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
               disabled={passLimits.loading}
             >
               <input type="hidden" name="passType" value={formData.passType} />
-              
+
               {/* Short Pass Option */}
-              <div className={`flex items-center space-x-2 border rounded-lg p-4 transition-colors ${
-                passLimits.shortPassesRemaining === 0 && !passLimits.hasSpecialPrivilege
-                  ? 'border-gray-300 bg-gray-50 opacity-50'
-                  : 'border-border hover:bg-muted/50'
-              }`}>
-                <RadioGroupItem 
-                  value="short" 
+              <div
+                className={`flex items-center space-x-2 border rounded-lg p-4 transition-colors ${
+                  passLimits.shortPassesRemaining === 0 &&
+                  !passLimits.hasSpecialPrivilege
+                    ? "border-gray-300 bg-gray-50 opacity-50"
+                    : "border-border hover:bg-muted/50"
+                }`}
+              >
+                <RadioGroupItem
+                  value="short"
                   id="short"
-                  disabled={passLimits.shortPassesRemaining === 0 && !passLimits.hasSpecialPrivilege}
+                  disabled={
+                    passLimits.shortPassesRemaining === 0 &&
+                    !passLimits.hasSpecialPrivilege
+                  }
                 />
-                <Label 
-                  htmlFor="short" 
+                <Label
+                  htmlFor="short"
                   className={`flex-1 ${
-                    passLimits.shortPassesRemaining === 0 && !passLimits.hasSpecialPrivilege
-                      ? 'cursor-not-allowed'
-                      : 'cursor-pointer'
+                    passLimits.shortPassesRemaining === 0 &&
+                    !passLimits.hasSpecialPrivilege
+                      ? "cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
                 >
                   <div className="font-medium text-gray-800">
@@ -330,22 +387,29 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
               </div>
 
               {/* Long Pass Option */}
-              <div className={`flex items-center space-x-2 border rounded-lg p-4 transition-colors ${
-                passLimits.longPassesRemaining === 0 && !passLimits.hasSpecialPrivilege
-                  ? 'border-gray-300 bg-gray-50 opacity-50'
-                  : 'border-border hover:bg-muted/50'
-              }`}>
-                <RadioGroupItem 
-                  value="long" 
+              <div
+                className={`flex items-center space-x-2 border rounded-lg p-4 transition-colors ${
+                  passLimits.longPassesRemaining === 0 &&
+                  !passLimits.hasSpecialPrivilege
+                    ? "border-gray-300 bg-gray-50 opacity-50"
+                    : "border-border hover:bg-muted/50"
+                }`}
+              >
+                <RadioGroupItem
+                  value="long"
                   id="long"
-                  disabled={passLimits.longPassesRemaining === 0 && !passLimits.hasSpecialPrivilege}
+                  disabled={
+                    passLimits.longPassesRemaining === 0 &&
+                    !passLimits.hasSpecialPrivilege
+                  }
                 />
-                <Label 
-                  htmlFor="long" 
+                <Label
+                  htmlFor="long"
                   className={`flex-1 ${
-                    passLimits.longPassesRemaining === 0 && !passLimits.hasSpecialPrivilege
-                      ? 'cursor-not-allowed'
-                      : 'cursor-pointer'
+                    passLimits.longPassesRemaining === 0 &&
+                    !passLimits.hasSpecialPrivilege
+                      ? "cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
                 >
                   <div className="font-medium text-gray-800">
@@ -608,7 +672,12 @@ export default function ApplyPage({ actionData }: Route.ComponentProps) {
           </Button>
           <Button
             type="submit"
-            disabled={!isFormValid() || isSubmitting || !canApplyForPassType() || passLimits.loading}
+            disabled={
+              !isFormValid() ||
+              isSubmitting ||
+              !canApplyForPassType() ||
+              passLimits.loading
+            }
             className="flex-1"
           >
             {isSubmitting ? (

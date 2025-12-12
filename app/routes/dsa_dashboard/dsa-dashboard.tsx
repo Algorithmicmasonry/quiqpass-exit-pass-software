@@ -8,6 +8,7 @@ import {
   MapPin,
   Phone,
   RefreshCcw,
+  ShieldUser,
   TrendingUp,
   User,
   X,
@@ -936,7 +937,28 @@ export default function DSADashboard({ loaderData }: Route.ComponentProps) {
                 </div>
               </div>
 
-              {/* Emergency Contact */}
+              {/* Guardian name and phone number*/}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <ShieldUser className="h-5 w-5" />
+                  Guardian Information
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">
+                      {selectedPass?.student.guardian_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="font-medium">
+                      {selectedPass?.student.guardian_phone_number}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* Emergency contact */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Phone className="h-5 w-5" />
