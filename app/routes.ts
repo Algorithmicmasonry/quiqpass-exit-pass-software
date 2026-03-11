@@ -50,6 +50,7 @@ export default [
       "/cso-dashboard/pass-requests",
       "routes/cso_dashboard/pass-requests.tsx"
     ),
+    route("/cso-dashboard/analytics", "routes/cso_dashboard/analytics.tsx"),
   ]),
   route("/test", "dashboard/page.tsx"),
   route("dashboard", "routes/auth/dashboard.tsx"),

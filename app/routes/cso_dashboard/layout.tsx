@@ -53,6 +53,11 @@ const CSODashboardLayout = () => {
         url: "/cso-dashboard/pass-requests",
         icon: IconListDetails,
       },
+      {
+        title: "Analytics",
+        url: "/cso-dashboard/analytics",
+        icon: IconChartBar,
+      },
     ],
     navClouds: [
       {
