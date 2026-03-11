@@ -50,23 +50,8 @@ const CSODashboardLayout = () => {
       },
       {
         title: "Pass Requests",
-        url: "/dsa-dashboard/pass-requests",
+        url: "/cso-dashboard/pass-requests",
         icon: IconListDetails,
-      },
-      {
-        title: "Analytics",
-        url: "/dsa-dashboard/analytics",
-        icon: IconChartBar,
-      },
-      {
-        title: "Students",
-        url: "/dsa-dashboard/students",
-        icon: IconUsers,
-      },
-      {
-        title: "Settings",
-        url: "/dsa-dashboard/settings",
-        icon: IconSettings,
       },
     ],
     navClouds: [

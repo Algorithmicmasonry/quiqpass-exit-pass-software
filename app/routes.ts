@@ -46,6 +46,10 @@ export default [
   ]),
   layout("routes/cso_dashboard/layout.tsx", [
     route("cso-dashboard", "routes/cso_dashboard/cso-dashboard.tsx"),
+    route(
+      "/cso-dashboard/pass-requests",
+      "routes/cso_dashboard/pass-requests.tsx"
+    ),
   ]),
   route("/test", "dashboard/page.tsx"),
   route("dashboard", "routes/auth/dashboard.tsx"),

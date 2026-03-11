@@ -698,7 +698,7 @@ export default function CSODashboard({ loaderData }: Route.ComponentProps) {
                   : "No pending requests"}
               </CardDescription>
             </div>
-            <Link to="/dsa-dashboard/pass-requests">
+            <Link to="/cso-dashboard/pass-requests">
               <Button
                 variant="outline"
                 size="sm"
