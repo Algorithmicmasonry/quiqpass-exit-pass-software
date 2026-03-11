@@ -20,6 +20,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Form, redirect, useNavigate, useSearchParams } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { notifyStudent, notifyStaffByRole, getPassWithStudent, resolveStudent } from "~/lib/notifications";
 import { DashboardHeaders } from "~/components/dashboard";
 import Loader from "~/components/loader";
 import { Badge } from "~/components/ui/badge";
@@ -251,6 +252,26 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         return { error: updateError.message };
       }
 
+      // Notify student and CSO
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        const student = resolveStudent(passData.student);
+        const studentName = student
+          ? `${student.first_name} ${student.last_name} (${student.matric_no})`
+          : "A student";
+
+        await notifyStudent(
+          passData.student_id,
+          "Your exit pass request has been approved by the DSA and forwarded to the CSO for final approval.",
+          passId
+        );
+        await notifyStaffByRole(
+          "CSO",
+          `A pass request from ${studentName} has been approved by the DSA and is awaiting your approval.`,
+          passId
+        );
+      }
+
       toast.success("Pass approved and forwarded to CSO");
       return { success: true };
     }
@@ -278,6 +299,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
       if (updateError) {
         toast.error("Failed to reject pass");
         return { error: updateError.message };
+      }
+
+      // Notify student of rejection
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        await notifyStudent(
+          passData.student_id,
+          `Your exit pass request has been rejected by the DSA. Reason: ${rejectionReason}`,
+          passId
+        );
       }
 
       toast.success("Pass rejected successfully");

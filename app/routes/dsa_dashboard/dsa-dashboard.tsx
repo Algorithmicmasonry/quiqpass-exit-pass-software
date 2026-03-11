@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, redirect, useFetcher } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { notifyStudent, notifyStaffByRole, getPassWithStudent, resolveStudent } from "~/lib/notifications";
 import Loader from "~/components/loader";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -404,6 +405,26 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         entity_id: passId,
       });
 
+      // Notify student and CSO
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        const student = resolveStudent(passData.student);
+        const studentName = student
+          ? `${student.first_name} ${student.last_name} (${student.matric_no})`
+          : "A student";
+
+        await notifyStudent(
+          passData.student_id,
+          "Your exit pass request has been approved by the DSA and forwarded to the CSO for final approval.",
+          passId
+        );
+        await notifyStaffByRole(
+          "CSO",
+          `A pass request from ${studentName} has been approved by the DSA and is awaiting your approval.`,
+          passId
+        );
+      }
+
       toast.success("Pass approved Succesfully!");
       return { success: true, message: "Pass approved successfully" };
     } else if (intent === "deny") {
@@ -432,6 +453,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         entity_type: "pass",
         entity_id: passId,
       });
+
+      // Notify student of rejection
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        await notifyStudent(
+          passData.student_id,
+          `Your exit pass request has been rejected by the DSA.${comments ? ` Reason: ${comments}` : ""}`,
+          passId
+        );
+      }
 
       return redirect("/dsa-dashboard");
     }

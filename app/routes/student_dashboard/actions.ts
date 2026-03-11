@@ -3,6 +3,7 @@
 import { supabase } from "supabase/supabase-client";
 import type { PassRequest } from "types";
 import toast from "react-hot-toast";
+import { notifyStaffByRole } from "~/lib/notifications";
 
 interface PassLimitCheckResult {
   allowed: boolean;
@@ -186,6 +187,23 @@ export async function applyForStudentPass(formData: FormData, request: Request) 
         destination,
       },
     });
+
+    // Notify all DSA staff of the new pass request
+    const { data: studentProfile } = await supabase
+      .from("student")
+      .select("first_name, last_name, matric_no")
+      .eq("id", user.id)
+      .single();
+
+    const studentName = studentProfile
+      ? `${studentProfile.first_name} ${studentProfile.last_name} (${studentProfile.matric_no})`
+      : "A student";
+
+    await notifyStaffByRole(
+      "DSA",
+      `New exit pass request from ${studentName} to ${destination}. Reason: ${reason}.`,
+      pass.id
+    );
 
     // NOTE: Pass count will be incremented automatically by the database trigger
     // when the pass status changes to 'cso_approved'

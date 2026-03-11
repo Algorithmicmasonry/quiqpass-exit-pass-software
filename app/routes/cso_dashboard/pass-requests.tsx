@@ -20,6 +20,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Form, redirect, useNavigate, useSearchParams } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { notifyStudent, getPassWithStudent } from "~/lib/notifications";
 import { DashboardHeaders } from "~/components/dashboard";
 import Loader from "~/components/loader";
 import { Badge } from "~/components/ui/badge";
@@ -242,6 +243,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         entity_id: passId,
       });
 
+      // Notify student of full approval
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        await notifyStudent(
+          passData.student_id,
+          "Your exit pass request has been fully approved by the DSA and CSO. You can now download your pass.",
+          passId
+        );
+      }
+
       toast.success("Pass approved successfully");
       return { success: true };
     }
@@ -278,6 +289,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         entity_type: "pass",
         entity_id: passId,
       });
+
+      // Notify student of rejection
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        await notifyStudent(
+          passData.student_id,
+          `Your exit pass request has been rejected by the CSO. Reason: ${rejectionReason}`,
+          passId
+        );
+      }
 
       toast.success("Pass rejected successfully");
       return { success: true };

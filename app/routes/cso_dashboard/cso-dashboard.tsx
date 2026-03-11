@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, redirect, useFetcher } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { notifyStudent, getPassWithStudent } from "~/lib/notifications";
 import Loader from "~/components/loader";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -39,7 +40,6 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { useRevalidator } from "react-router";
 import type { Route } from "./+types/cso-dashboard";
-import { string } from "zod";
 
 // TODO: Confirm if pass limit tracking auto updates
 
@@ -407,6 +407,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         entity_id: passId,
       });
 
+      // Notify student of full approval
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        await notifyStudent(
+          passData.student_id,
+          "Your exit pass request has been fully approved by the DSA and CSO. You can now download your pass.",
+          passId
+        );
+      }
+
       toast.success("Pass approved Succesfully!");
       return { success: true, message: "Pass approved successfully" };
     } else if (intent === "deny") {
@@ -435,6 +445,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
         entity_type: "pass",
         entity_id: passId,
       });
+
+      // Notify student of rejection
+      const passData = await getPassWithStudent(passId);
+      if (passData) {
+        await notifyStudent(
+          passData.student_id,
+          `Your exit pass request has been rejected by the CSO.${comments ? ` Reason: ${comments}` : ""}`,
+          passId
+        );
+      }
 
       return redirect("/cso-dashboard");
     }
