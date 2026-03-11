@@ -16,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 import { Outlet, useLoaderData, redirect } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { usePushSubscription } from "~/hooks/use-push-subscription";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { NavMain } from "~/components/nav-main";
 import { NavUser } from "~/components/nav-user";
@@ -69,6 +70,7 @@ const StudentDashboardLayout = () => {
   };
 
   const { profile, unreadCount} = useLoaderData() as StudentLayoutData;
+  usePushSubscription();
 
   const data = {
   user: {

@@ -7,6 +7,7 @@ import {
 } from "@tabler/icons-react";
 import { Outlet, useLoaderData } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { usePushSubscription } from "~/hooks/use-push-subscription";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { SidebarFeedbackForm } from "~/components/global/sidebar-form";
 import { NavMain } from "~/components/nav-main";
@@ -30,6 +31,7 @@ export async function clientLoader() {
 
 const CSODashboardLayout = () => {
   const { unreadCount } = useLoaderData() as { unreadCount: number };
+  usePushSubscription();
 
   const gradientStyle = {
     background: "radial-gradient(125% 125% at 50% 10%,#ffffff 40%,#a78bfa 100%",

@@ -7,6 +7,7 @@ import {
 } from "@tabler/icons-react";
 import { Outlet, useLoaderData, useNavigation } from "react-router";
 import { supabase } from "supabase/supabase-client";
+import { usePushSubscription } from "~/hooks/use-push-subscription";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { SidebarFeedbackForm } from "~/components/global/sidebar-form";
 import Loader from "~/components/loader";
@@ -32,6 +33,7 @@ export async function clientLoader() {
 const DsaDashboardLayout = () => {
   const { unreadCount } = useLoaderData() as { unreadCount: number };
   const navigation = useNavigation();
+  usePushSubscription();
 
   const gradientStyle = {
     background: "radial-gradient(125% 125% at 50% 10%,#ffffff 40%,#a78bfa 100%",
