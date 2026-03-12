@@ -62,12 +62,27 @@ Deno.serve(async (req) => {
       return new Response("No subscriptions", { status: 200 });
     }
 
+    // Resolve the click URL based on recipient type and (for staff) actual role
+    let clickUrl = "/";
+    if (record.pass_id) {
+      if (record.recipient_type === "student") {
+        clickUrl = "/student-dashboard/pass-requests";
+      } else {
+        // Look up staff role to route correctly
+        const { data: staffRow } = await supabase
+          .from("staff")
+          .select("role")
+          .eq("id", record.recipient_id)
+          .single();
+        const prefix = staffRow?.role === "CSO" ? "cso" : "dsa";
+        clickUrl = `/${prefix}-dashboard/pass-requests`;
+      }
+    }
+
     const pushPayload = JSON.stringify({
       title: "QuiqPass",
       body: record.message,
-      url: record.pass_id
-        ? `/${record.recipient_type === "student" ? "student" : record.recipient_type === "staff" ? "dsa" : "cso"}-dashboard/pass-requests`
-        : "/",
+      url: clickUrl,
     });
 
     // Send to every registered device, in parallel
