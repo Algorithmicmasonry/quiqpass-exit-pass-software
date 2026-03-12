@@ -34,6 +34,10 @@ export default [
       "/student-dashboard/notifications",
       "routes/student_dashboard/notifications.tsx",
     ),
+    route(
+      "/student-dashboard/settings",
+      "routes/student_dashboard/settings.tsx",
+    ),
   ]),
   layout("routes/dsa_dashboard/layout.tsx", [
     route("/dsa-dashboard", "routes/dsa_dashboard/dsa-dashboard.tsx"),
@@ -44,6 +48,7 @@ export default [
     ),
     route("/dsa-dashboard/students", "routes/dsa_dashboard/students.tsx"),
     route("/dsa-dashboard/notifications", "routes/dsa_dashboard/notifications.tsx"),
+    route("/dsa-dashboard/settings", "routes/dsa_dashboard/settings.tsx"),
   ]),
   layout("routes/cso_dashboard/layout.tsx", [
     route("cso-dashboard", "routes/cso_dashboard/cso-dashboard.tsx"),
@@ -54,6 +59,7 @@ export default [
     route("/cso-dashboard/analytics", "routes/cso_dashboard/analytics.tsx"),
     route("/cso-dashboard/students", "routes/cso_dashboard/students.tsx"),
     route("/cso-dashboard/notifications", "routes/cso_dashboard/notifications.tsx"),
+    route("/cso-dashboard/settings", "routes/cso_dashboard/settings.tsx"),
   ]),
   route("/test", "dashboard/page.tsx"),
   route("dashboard", "routes/auth/dashboard.tsx"),

@@ -3,11 +3,13 @@ import {
   IconChartBar,
   IconDashboard,
   IconListDetails,
+  IconSettings,
   IconUsers,
 } from "@tabler/icons-react";
 import { Outlet, useLoaderData } from "react-router";
 import { supabase } from "supabase/supabase-client";
 import { usePushSubscription } from "~/hooks/use-push-subscription";
+import { PwaInstallPrompt } from "~/components/pwa-install-prompt";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { SidebarFeedbackForm } from "~/components/global/sidebar-form";
 import { NavMain } from "~/components/nav-main";
@@ -65,10 +67,16 @@ const CSODashboardLayout = () => {
       icon: IconBell,
       unread: unreadCount > 0 ? unreadCount : undefined,
     },
+    {
+      title: "Settings",
+      url: "/cso-dashboard/settings",
+      icon: IconSettings,
+    },
   ];
 
   return (
     <div className="min-h-screen relative" suppressHydrationWarning>
+      <PwaInstallPrompt />
       {/* Main Gradient Background */}
       <div
         className="fixed inset-0 z-0"

@@ -17,6 +17,7 @@ import {
 import { Outlet, useLoaderData, redirect } from "react-router";
 import { supabase } from "supabase/supabase-client";
 import { usePushSubscription } from "~/hooks/use-push-subscription";
+import { PwaInstallPrompt } from "~/components/pwa-install-prompt";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { NavMain } from "~/components/nav-main";
 import { NavUser } from "~/components/nav-user";
@@ -104,6 +105,11 @@ const StudentDashboardLayout = () => {
       url: "/student-dashboard/notifications",
       icon: IconBell,
       unread: unreadCount > 0 ? unreadCount : undefined,
+    },
+    {
+      title: "Settings",
+      url: "/student-dashboard/settings",
+      icon: IconSettings,
     },
   ],
   navClouds: [
@@ -193,6 +199,7 @@ const StudentDashboardLayout = () => {
 
   return (
     <div className="min-h-screen relative" suppressHydrationWarning>
+      <PwaInstallPrompt />
       {/* Main Gradient Background */}
       <div
         className="fixed inset-0 z-0"

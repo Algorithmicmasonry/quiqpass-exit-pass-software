@@ -3,11 +3,13 @@ import {
   IconChartBar,
   IconDashboard,
   IconListDetails,
+  IconSettings,
   IconUsers,
 } from "@tabler/icons-react";
 import { Outlet, useLoaderData, useNavigation } from "react-router";
 import { supabase } from "supabase/supabase-client";
 import { usePushSubscription } from "~/hooks/use-push-subscription";
+import { PwaInstallPrompt } from "~/components/pwa-install-prompt";
 import CustomSidebar from "~/components/global/custom-sidebar";
 import { SidebarFeedbackForm } from "~/components/global/sidebar-form";
 import Loader from "~/components/loader";
@@ -67,6 +69,11 @@ const DsaDashboardLayout = () => {
       icon: IconBell,
       unread: unreadCount > 0 ? unreadCount : undefined,
     },
+    {
+      title: "Settings",
+      url: "/dsa-dashboard/settings",
+      icon: IconSettings,
+    },
   ];
 
   const isNavigating = Boolean(navigation.location);
@@ -74,6 +81,7 @@ const DsaDashboardLayout = () => {
 
   return (
     <div className="min-h-screen relative" suppressHydrationWarning>
+      <PwaInstallPrompt />
       {/* Main Gradient Background */}
       <div
         className="fixed inset-0 z-0"
