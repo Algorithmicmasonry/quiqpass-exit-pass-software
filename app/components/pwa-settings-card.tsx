@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, RefreshCw, RotateCcw, TestTube2 } from "lucide-react";
+import { Bell, Loader2, RefreshCw, RotateCcw, TestTube2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { supabase } from "supabase/supabase-client";
@@ -216,19 +216,30 @@ export function PwaSettingsCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Status + toggle */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {notificationsOn
-              ? "You will receive push notifications for pass updates."
-              : permission === "denied"
-                ? "Notifications blocked in browser settings."
-                : "Enable push notifications to receive pass updates."}
-          </p>
-          <Switch
-            checked={notificationsOn}
-            onCheckedChange={handleToggle}
-            disabled={permission === "denied" || loading !== null}
-          />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-muted-foreground">
+              {loading === "toggle"
+                ? notificationsOn
+                  ? "Disabling notifications…"
+                  : "Waiting for permission…"
+                : notificationsOn
+                  ? "You will receive push notifications for pass updates."
+                  : permission === "denied"
+                    ? "Notifications blocked in browser settings."
+                    : "Enable push notifications to receive pass updates."}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {loading === "toggle" && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            <Switch
+              checked={notificationsOn}
+              onCheckedChange={handleToggle}
+              disabled={permission === "denied" || loading !== null}
+            />
+          </div>
         </div>
 
         {/* Primary actions */}
@@ -240,7 +251,9 @@ export function PwaSettingsCard() {
             disabled={!notificationsOn || loading !== null}
             className="text-muted-foreground"
           >
-            <TestTube2 className="mr-1.5 h-3.5 w-3.5" />
+            {loading === "test"
+              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              : <TestTube2 className="mr-1.5 h-3.5 w-3.5" />}
             {loading === "test" ? "Sending…" : "Test Notification"}
           </Button>
         </div>
@@ -257,7 +270,9 @@ export function PwaSettingsCard() {
             disabled={loading !== null}
             className="text-muted-foreground"
           >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            {loading === "update"
+              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
             {loading === "update" ? "Updating…" : "Update Service Worker"}
           </Button>
           <Button
@@ -267,10 +282,10 @@ export function PwaSettingsCard() {
             disabled={loading !== null}
             className="text-muted-foreground"
           >
-            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             {loading === "resubscribe"
-              ? "Re-subscribing…"
-              : "Force Re-subscribe"}
+              ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
+            {loading === "resubscribe" ? "Re-subscribing…" : "Force Re-subscribe"}
           </Button>
         </div>
       </CardContent>
