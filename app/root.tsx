@@ -68,13 +68,24 @@ export default function App() {
   const navigation = useNavigation();
   const isNavigating = Boolean(navigation.location);
 
-  // Register service worker (client-side only)
+  // Register service worker and reload when a new version takes over.
+  // This prevents blank screens caused by stale cached JS chunks after deploy.
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
-        .catch((err) => console.error("SW registration failed:", err));
-    }
+    if (!("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .catch((err) => console.error("SW registration failed:", err));
+
+    // When the SW controller changes (new SW activated via skipWaiting +
+    // clientsClaim), reload the page so fresh assets are loaded from the
+    // new precache instead of the stale old cache.
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   }, []);
 
   return (

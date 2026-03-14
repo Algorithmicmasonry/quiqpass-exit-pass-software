@@ -3,6 +3,14 @@ import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Take over immediately when a new SW version is deployed, instead of
+// waiting for all tabs to close. Combined with the controllerchange reload
+// in root.tsx this prevents blank-screen on stale cache.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 // Clean up old caches from previous SW versions
 cleanupOutdatedCaches();
 
