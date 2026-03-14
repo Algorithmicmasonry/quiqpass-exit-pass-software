@@ -211,9 +211,8 @@ const StudentDashboardLayout = () => {
 
       {/* Sidebar and content */}
       <div className="relative z-10">
-        <CustomSidebar gradientStyle={gradientStyle}>
+        <CustomSidebar gradientStyle={gradientStyle} footer={<NavUser user={data.user} />}>
           <NavMain items={data.navMain} />
-          <NavUser user={data.user} />
         </CustomSidebar>
 
         {/* Content Area - Add left margin to push it away from fixed sidebar */}

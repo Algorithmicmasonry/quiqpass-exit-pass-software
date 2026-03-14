@@ -93,9 +93,8 @@ const DsaDashboardLayout = () => {
 
       {/* Sidebar and content */}
       <div className="relative z-10">
-        <CustomSidebar gradientStyle={gradientStyle}>
+        <CustomSidebar gradientStyle={gradientStyle} footer={<SidebarFeedbackForm route="DSA" />}>
           <NavMain items={navMain} />
-          <SidebarFeedbackForm route="DSA" />
         </CustomSidebar>
 
         <div className="ml-0 md:ml-64 min-h-screen">

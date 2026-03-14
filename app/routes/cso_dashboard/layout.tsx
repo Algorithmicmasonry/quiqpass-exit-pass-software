@@ -88,9 +88,8 @@ const CSODashboardLayout = () => {
 
       {/* Sidebar and content */}
       <div className="relative z-10">
-        <CustomSidebar gradientStyle={gradientStyle}>
+        <CustomSidebar gradientStyle={gradientStyle} footer={<SidebarFeedbackForm route="CSO" />}>
           <NavMain items={navMain} />
-          <SidebarFeedbackForm route="CSO" />
         </CustomSidebar>
 
         <div className="ml-0 md:ml-64 min-h-screen">

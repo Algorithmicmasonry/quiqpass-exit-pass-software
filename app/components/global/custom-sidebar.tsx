@@ -8,12 +8,13 @@ import { useLocation } from "react-router";
 interface CustomSidebarProps {
   children: React.ReactNode;
   gradientStyle: React.CSSProperties;
-  sidebarFooter?: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 const CustomSidebar: React.FC<CustomSidebarProps> = ({
   children,
   gradientStyle,
+  footer,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const toggleSidebar = () => setIsOpen((prev) => !prev);
@@ -36,6 +37,7 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({
             <Logo />
           </div>
           <div className="flex flex-col flex-1 overflow-y-auto">{children}</div>
+          {footer && <div className="mt-auto">{footer}</div>}
         </aside>
       </SidebarProvider>
 
@@ -68,6 +70,7 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({
                 <div className="flex flex-col flex-1 overflow-y-auto">
                   <div>{children}</div>
                 </div>
+                {footer && <div className="mt-auto">{footer}</div>}
               </div>
             </div>
           </SidebarProvider>
