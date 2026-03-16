@@ -1,5 +1,6 @@
 import {
   IconBell,
+  IconCalendar,
   IconChartBar,
   IconDashboard,
   IconListDetails,
@@ -68,6 +69,11 @@ const DsaDashboardLayout = () => {
       url: "/dsa-dashboard/notifications",
       icon: IconBell,
       unread: unreadCount > 0 ? unreadCount : undefined,
+    },
+    {
+      title: "Attendance",
+      url: "/dsa-dashboard/attendance",
+      icon: IconCalendar,
     },
     {
       title: "Settings",

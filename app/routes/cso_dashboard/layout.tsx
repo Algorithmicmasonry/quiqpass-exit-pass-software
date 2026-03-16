@@ -1,5 +1,6 @@
 import {
   IconBell,
+  IconCalendar,
   IconChartBar,
   IconDashboard,
   IconListDetails,
@@ -66,6 +67,11 @@ const CSODashboardLayout = () => {
       url: "/cso-dashboard/notifications",
       icon: IconBell,
       unread: unreadCount > 0 ? unreadCount : undefined,
+    },
+    {
+      title: "Attendance",
+      url: "/cso-dashboard/attendance",
+      icon: IconCalendar,
     },
     {
       title: "Settings",
