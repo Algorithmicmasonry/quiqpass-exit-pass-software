@@ -14,7 +14,37 @@ import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import Loader from "./components/loader";
 
+export const meta: Route.MetaFunction = () => [
+  { title: "QuiqPass — Digital Exit Pass Management" },
+  {
+    name: "description",
+    content:
+      "QuiqPass is a digital exit pass management system for private universities. Students can apply for passes online and track approvals in real time.",
+  },
+  { name: "robots", content: "index, follow" },
+  // Open Graph
+  { property: "og:type", content: "website" },
+  { property: "og:title", content: "QuiqPass — Digital Exit Pass Management" },
+  {
+    property: "og:description",
+    content:
+      "QuiqPass is a digital exit pass management system for private universities. Students can apply for passes online and track approvals in real time.",
+  },
+  { property: "og:image", content: "/icon-512.png" },
+  // Twitter Card
+  { name: "twitter:card", content: "summary" },
+  { name: "twitter:title", content: "QuiqPass — Digital Exit Pass Management" },
+  {
+    name: "twitter:description",
+    content:
+      "QuiqPass is a digital exit pass management system for private universities.",
+  },
+  { name: "twitter:image", content: "/icon-512.png" },
+];
+
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+  { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",

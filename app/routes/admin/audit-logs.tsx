@@ -27,11 +27,11 @@ export async function clientLoader() {
 
   const { data: logs } = await supabase
     .from("audit_log")
-    .select("id, action, table_name, record_id, performed_by, details, created_at")
+    .select("id, action, entity_type, entity_id, user_id, details, created_at")
     .order("created_at", { ascending: false })
     .limit(500);
 
-  const performerIds = [...new Set((logs ?? []).map((l) => l.performed_by).filter(Boolean))];
+  const performerIds = [...new Set((logs ?? []).map((l) => l.user_id).filter(Boolean))];
   const { data: staffList } = performerIds.length
     ? await supabase
         .from("staff")
@@ -55,6 +55,10 @@ const actionColors: Record<string, string> = {
   INSERT: "bg-green-100 text-green-800",
   UPDATE: "bg-blue-100 text-blue-800",
   DELETE: "bg-red-100 text-red-800",
+  pass_dsa_approved: "bg-blue-100 text-blue-800",
+  pass_cso_approved: "bg-green-100 text-green-800",
+  pass_rejected: "bg-red-100 text-red-800",
+  user_logged_in: "bg-gray-100 text-gray-800",
 };
 
 export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps) {
@@ -65,8 +69,8 @@ export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps)
   const [deleting, setDeleting] = useState(false);
 
   const filtered = logs.filter((l) => {
-    const performer = staffMap[l.performed_by]?.name ?? l.performed_by ?? "";
-    return `${l.action} ${l.table_name} ${l.record_id} ${performer}`
+    const performer = staffMap[l.user_id]?.name ?? l.user_id ?? "";
+    return `${l.action} ${l.entity_type} ${l.entity_id} ${performer}`
       .toLowerCase()
       .includes(search.toLowerCase());
   });
@@ -126,7 +130,7 @@ export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps)
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search action, table, or performer…"
+            placeholder="Search action, entity, or performer…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8"
@@ -161,8 +165,8 @@ export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps)
               </TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Action</TableHead>
-              <TableHead>Table</TableHead>
-              <TableHead>Record ID</TableHead>
+              <TableHead>Entity Type</TableHead>
+              <TableHead>Entity ID</TableHead>
               <TableHead>Performed By</TableHead>
               <TableHead>Details</TableHead>
             </TableRow>
@@ -179,7 +183,7 @@ export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps)
               </TableRow>
             ) : (
               filtered.map((log) => {
-                const performer = staffMap[log.performed_by];
+                const performer = staffMap[log.user_id];
                 return (
                   <TableRow
                     key={log.id}
@@ -202,9 +206,9 @@ export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps)
                         {log.action}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm font-mono">{log.table_name}</TableCell>
+                    <TableCell className="text-sm font-mono">{log.entity_type ?? "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono max-w-[120px] truncate">
-                      {log.record_id ?? "—"}
+                      {log.entity_id ?? "—"}
                     </TableCell>
                     <TableCell className="text-sm">
                       {performer ? (
@@ -214,7 +218,7 @@ export default function AdminAuditLogsPage({ loaderData }: Route.ComponentProps)
                         </div>
                       ) : (
                         <span className="text-muted-foreground text-xs font-mono">
-                          {log.performed_by ?? "—"}
+                          {log.user_id ?? "—"}
                         </span>
                       )}
                     </TableCell>
