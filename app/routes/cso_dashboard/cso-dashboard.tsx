@@ -14,7 +14,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, redirect, useFetcher } from "react-router";
 import { supabase } from "supabase/supabase-client";
@@ -474,6 +474,10 @@ export function HydrateFallback() {
 export default function CSODashboard({ loaderData }: Route.ComponentProps) {
   const { revalidate, state } = useRevalidator();
 
+  // Stable ref so the subscription doesn't rebuild on every render
+  const revalidateRef = useRef(revalidate);
+  useEffect(() => { revalidateRef.current = revalidate; });
+
   // Auto-refresh when a pass is forwarded by DSA or any status changes
   useEffect(() => {
     const channel = supabase
@@ -481,7 +485,7 @@ export default function CSODashboard({ loaderData }: Route.ComponentProps) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pass" },
-        () => revalidate()
+        () => revalidateRef.current()
       )
       .subscribe();
 

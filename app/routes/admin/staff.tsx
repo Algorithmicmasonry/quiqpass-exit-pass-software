@@ -1,6 +1,6 @@
-import { Loader2, Plus, Search, ShieldOff } from "lucide-react";
+import { Eye, EyeOff, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { redirect, useLoaderData } from "react-router";
+import { redirect } from "react-router";
 import toast from "react-hot-toast";
 import { supabase } from "supabase/supabase-client";
 import { DashboardHeaders } from "~/components/dashboard";
@@ -35,6 +35,16 @@ import type { Route } from "./+types/staff";
 const ROLES = ["DSA", "CSO", "Assistant CSO", "porter", "Security", "admin"] as const;
 type Role = (typeof ROLES)[number];
 
+type StaffRow = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  gender: string | null;
+  created_at: string;
+};
+
 export async function clientLoader() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw redirect("/staff-login");
@@ -44,15 +54,19 @@ export async function clientLoader() {
     .select("id, first_name, last_name, email, role, gender, created_at")
     .order("created_at", { ascending: false });
 
-  return { staffList: staffList ?? [] };
+  return { staffList: (staffList ?? []) as StaffRow[] };
 }
 
 export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
   const { staffList } = loaderData;
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [list, setList] = useState<StaffRow[]>(staffList);
+
+  // Create
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -61,7 +75,14 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
     role: "" as Role | "",
     gender: "",
   });
-  const [list, setList] = useState(staffList);
+
+  // Edit
+  const [editStaff, setEditStaff] = useState<StaffRow | null>(null);
+  const [editForm, setEditForm] = useState({ role: "" as Role | "", gender: "" });
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Delete
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const filtered = list.filter((s) => {
     const matchesSearch =
@@ -114,12 +135,65 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
         ...prev,
       ]);
       setForm({ firstName: "", lastName: "", email: "", password: "", role: "", gender: "" });
+      setShowPassword(false);
       setOpen(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create staff member.";
       toast.error(message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setDeleting(id);
+    try {
+      const { error } = await supabase.from("staff").delete().eq("id", id);
+      if (error) throw error;
+      setList((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Staff member removed.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove staff member.");
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  function openEdit(s: StaffRow) {
+    setEditStaff(s);
+    setEditForm({ role: s.role as Role, gender: s.gender ?? "" });
+  }
+
+  async function handleEdit() {
+    if (!editStaff || !editForm.role) {
+      toast.error("Role is required.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const { error } = await supabase
+        .from("staff")
+        .update({
+          role: editForm.role,
+          gender: editForm.gender || null,
+        })
+        .eq("id", editStaff.id);
+
+      if (error) throw error;
+
+      setList((prev) =>
+        prev.map((s) =>
+          s.id === editStaff.id
+            ? { ...s, role: editForm.role as string, gender: editForm.gender || null }
+            : s
+        )
+      );
+      setEditStaff(null);
+      toast.success("Staff updated.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update staff.");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -157,7 +231,7 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
           </SelectContent>
         </Select>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setShowPassword(false); }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -185,7 +259,22 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
               </div>
               <div className="space-y-1.5">
                 <Label>Password *</Label>
-                <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 6 characters" />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="Min 6 characters"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label>Role *</Label>
@@ -198,9 +287,9 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
                   </SelectContent>
                 </Select>
               </div>
-              {form.role === "porter" && (
+              {(form.role === "porter" || form.role === "Security") && (
                 <div className="space-y-1.5">
-                  <Label>Gender (required for porters)</Label>
+                  <Label>Gender {form.role === "porter" ? "(required for porters)" : "(optional)"}</Label>
                   <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
@@ -221,6 +310,44 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
         </Dialog>
       </div>
 
+      {/* Edit dialog */}
+      <Dialog open={!!editStaff} onOpenChange={(o) => { if (!o) setEditStaff(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Staff — {editStaff?.first_name} {editStaff?.last_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Role *</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as Role })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Gender</Label>
+              <Select value={editForm.gender} onValueChange={(v) => setEditForm({ ...editForm, gender: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender (if applicable)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handleEdit} disabled={editSaving}>
+              {editSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {editSaving ? "Saving…" : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Table */}
       <div className="rounded-lg border overflow-x-auto">
         <Table>
@@ -231,12 +358,13 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
               <TableHead>Role</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Created</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                   No staff members found.
                 </TableCell>
               </TableRow>
@@ -253,6 +381,16 @@ export default function AdminStaffPage({ loaderData }: Route.ComponentProps) {
                   <TableCell className="text-sm capitalize">{s.gender ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(s.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} disabled={deleting === s.id}>
+                        {deleting === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
