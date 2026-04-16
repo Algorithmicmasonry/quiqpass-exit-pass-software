@@ -47,7 +47,7 @@ const AdminDashboardLayout = () => {
   };
 
   const navMain = [
-    { title: "Dashboard", url: "/admin-dashboard", icon: IconDashboard },
+    { title: "Dashboard", url: "/admin-dashboard", icon: IconDashboard, route: "admin-dashboard" },
     { title: "Staff", url: "/admin-dashboard/staff", icon: IconShield },
     { title: "Hostels", url: "/admin-dashboard/hostels", icon: IconBuilding },
     { title: "Rooms", url: "/admin-dashboard/rooms", icon: IconDoor },

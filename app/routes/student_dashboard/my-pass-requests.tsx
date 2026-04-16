@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  Download,
   FileText,
   Filter,
   MapPin,
@@ -54,7 +55,7 @@ import { getStatusColor, getStatusIcon } from "~/services/getPassStatusService";
 import type { Route } from "./+types/my-pass-requests";
 import toast from "react-hot-toast";
 import { Form } from "react-router";
-import { formatDate, formatTime } from "./actions";
+import { formatDate, formatTime, generatePassDocument } from "./actions";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   try {
@@ -68,23 +69,32 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
       return redirect("/login");
     }
 
-    // Fetch student's pass requests with proper column name
-    const { data: passes, error: passError } = await supabase
-      .from("pass")
-      .select("*")
-      .eq("student_id", user.id)
-      .order("requested_at", { ascending: false });
+    const [passesRes, studentRes] = await Promise.all([
+      supabase
+        .from("pass")
+        .select("*")
+        .eq("student_id", user.id)
+        .order("requested_at", { ascending: false }),
+      supabase
+        .from("student")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single(),
+    ]);
 
-    if (passError) {
-      console.error("Error fetching passes:", passError);
+    if (passesRes.error) {
+      console.error("Error fetching passes:", passesRes.error);
       return {
         passes: [],
+        studentName: "",
         error: "Failed to load pass requests",
       };
     }
 
+    const s = studentRes.data;
     return {
-      passes: passes || [],
+      passes: passesRes.data || [],
+      studentName: s ? `${s.first_name} ${s.last_name}` : "",
       error: null,
     };
   } catch (error) {
@@ -150,7 +160,7 @@ export function HydrateFallback() {
 }
 
 export default function RequestsPage({ loaderData }: Route.ComponentProps) {
-  const { passes, error } = loaderData;
+  const { passes, error, studentName } = loaderData;
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<PassRequest | null>(
@@ -357,6 +367,16 @@ export default function RequestsPage({ loaderData }: Route.ComponentProps) {
             <DialogDescription>
               Complete information about your exit pass request
             </DialogDescription>
+            {selectedRequest?.status === "cso_approved" && (
+              <Button
+                size="sm"
+                onClick={() => generatePassDocument(selectedRequest, studentName)}
+                className="gap-2 w-fit"
+              >
+                <Download className="h-4 w-4" />
+                Download Pass
+              </Button>
+            )}
           </DialogHeader>
 
           {selectedRequest && (

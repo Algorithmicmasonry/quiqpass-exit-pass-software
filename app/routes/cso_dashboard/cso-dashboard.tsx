@@ -474,6 +474,22 @@ export function HydrateFallback() {
 export default function CSODashboard({ loaderData }: Route.ComponentProps) {
   const { revalidate, state } = useRevalidator();
 
+  // Auto-refresh when a pass is forwarded by DSA or any status changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("cso-pass-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pass" },
+        () => revalidate()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const { stats, recentRequests, error } = loaderData || {
     stats: {
       pendingApproval: 0,

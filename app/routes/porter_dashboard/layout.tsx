@@ -43,6 +43,7 @@ const PorterDashboardLayout = () => {
       title: "Hostels",
       url: "/porter-dashboard",
       icon: IconHome,
+      route: "porter-dashboard",
     },
     {
       title: "Settings",

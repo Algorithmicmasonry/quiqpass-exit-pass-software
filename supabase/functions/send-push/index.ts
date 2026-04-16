@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     let clickUrl = "/";
     if (record.pass_id) {
       if (record.recipient_type === "student") {
-        clickUrl = "/student-dashboard/pass-requests";
+        clickUrl = "/student-dashboard/my-pass-requests";
       } else {
         // Look up staff role to route correctly
         const { data: staffRow } = await supabase

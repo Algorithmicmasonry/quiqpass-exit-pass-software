@@ -482,6 +482,22 @@ export function HydrateFallback() {
 export default function DSADashboard({ loaderData }: Route.ComponentProps) {
   const { revalidate, state } = useRevalidator();
 
+  // Auto-refresh when a new pass is submitted or any pass status changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("dsa-pass-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pass" },
+        () => revalidate()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const { stats, recentRequests, error } = loaderData || {
     stats: {
       pendingApproval: 0,

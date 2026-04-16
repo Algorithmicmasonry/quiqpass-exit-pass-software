@@ -64,6 +64,32 @@ export function NavMain({
                   <span>C.S.O Dashboard</span>
                 </Link>
               </SidebarMenuButton>
+            ) : items[0].route === "admin-dashboard" ? (
+              <SidebarMenuButton
+                tooltip="Admin Dashboard"
+                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+              >
+                <Link
+                  to="/admin-dashboard"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            ) : items[0].route === "porter-dashboard" ? (
+              <SidebarMenuButton
+                tooltip="Porter Dashboard"
+                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+              >
+                <Link
+                  to="/porter-dashboard"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Porter Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
             ) : (
               <SidebarMenuButton
                 tooltip="Apply For Pass"
